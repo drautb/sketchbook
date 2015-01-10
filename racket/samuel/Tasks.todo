@@ -1,0 +1,16 @@
+## TODO
+
++-	Use alpha channel in bitmaps
++-	State machine
+	-	Define interface for game states.
+	-	Create state classes for each state.
+	-	Create void game state, so that no-ops happen if there isn't a valid state yet.
++-	File structure
+	-	Create defines file.
+	+-	Figure out how the bitmap defines work. (Define in one file, load in another file?)
+-	Refactor to reuse code.
++-	FPS seems off...
+-	Network Stuff
+	-	Design delta model with UDP. Interesting.
+		-	I think that if I do this right, taking time into account, I don't need to do the client-side reconciliation, just prediction.
+	- 	Is using `udp-send-to*` going to cause problems? i.e. is it going to exhaust available ports? does it use a new port for each call? there could be hundreds per sec...
