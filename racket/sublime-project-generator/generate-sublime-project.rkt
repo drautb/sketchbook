@@ -48,6 +48,7 @@
 (define WORKING-DIRECTORY 'working_directory)
 (define ARGS 'args)
 
+(define CLASSPATH-DELIMITER ":")
 
 ;; PROJECT SPECIFIC SETTINGS
 (define FOLDER-EXCLUDE-PATTERNS-LOOKUP
@@ -58,33 +59,79 @@
   (hash 'maven 'javac
         null null))
 
+;; strip-trailing-slash : String -> String
+;; Strips a trailing slash from the input string
+(define (strip-trailing-slash str)
+  (string-trim str "/" #:left? #f))
+
+;; system->string : String -> String
+;; Takes a string that will be executed as a shell cmd, and returns its output as a string.
+(define (system->string cmd)
+  (with-output-to-string (λ () (system cmd))))
+
+;; extract-classpath-lines : String -> List of String
+;; Given a string that is the output of `mvn dependency:build-classpath`, this
+;; function will return a list of classpath strings. (One list per maven module)
+(define (extract-classpath-lines mvn-cmd-output)
+  (define MARKER "[INFO] Dependencies classpath:")
+  (define (handle-next-line lines)
+    (cond [(empty? lines) '()]
+          [(equal? (first lines) MARKER) (cons (first (rest lines)) (handle-next-line (rest (rest lines))))]
+          [else (handle-next-line (rest lines))]))
+  (let ([lines (string-split mvn-cmd-output "\n")])
+    (handle-next-line lines)))
+
+;; assemble-complete-classpath : List of String -> String
+;; Given a list of classpath strings, this function will combine them and remove
+;; duplicate entries.
+(define (assemble-complete-classpath classpaths)
+  (string-join
+    (remove-duplicates
+      (string-split
+        (string-join
+          (remove* '("") classpaths)
+          CLASSPATH-DELIMITER)
+        CLASSPATH-DELIMITER))
+    CLASSPATH-DELIMITER))
+
+;; get-classpath : -> String
+;; Executes a maven command to get the projects' classpaths, then assembles
+;; and returns it using the functions above.
 (define (get-classpath)
-  (define (find-classpath lines)
-    (let ([current-line (first lines)])
-      (if (equal? (string-ref current-line 0) #\[)
-          (find-classpath (rest lines))
-          current-line)))
-  (log "Executing mvn dependency:build-classpath...")
-  (let ([output-lines (string-split (with-output-to-string (λ () (system "mvn dependency:build-classpath"))) "\n")])
-    (find-classpath output-lines)))
+  (log "Determining classpath for javac linter...")
+  (let ([mvn-build-classpath-output (system->string "mvn dependency:build-classpath")])
+    (assemble-complete-classpath (extract-classpath-lines mvn-build-classpath-output))))
 
+;; convert-paths-to-classpaths : String -> String
+;; Takes the output of a system find command, and converts each resulting
+;; file to a classpath.
+(define (convert-paths-to-classpaths paths)
+  (let ([paths (string-split paths "\n")])
+    (string-trim
+      (foldl (λ (next-path accumulated)
+             (string-append accumulated CLASSPATH-DELIMITER
+                            (string-replace (string-replace next-path "pom.xml" "target/classes") "./" "${project}/")))
+           "" paths)
+      CLASSPATH-DELIMITER)))
+
+;; get-target-classpath : -> String
+;; Uses the function above to construct a classpath that includes the target dirctories for a maven project.
 (define (get-paths-to-targets)
-  (let ([pom-list (string-split (with-output-to-string (λ () (system "find . -name pom.xml"))))])
-    (foldl (λ (next-path current)
-             (string-append current ":" (string-replace (string-replace next-path "pom.xml" "target/classes") "./" "${project}/")))
-           "" pom-list)))
+  (let ([find-cmd-output (system->string "find . -name pom.xml")])
+    (convert-paths-to-classpaths find-cmd-output)))
 
-(define (javac-linter-settings)
+;; javac-linter-settings : String -> Hash
+;; Given a classpath, this function generates the Hash that, when converted to JSON, configures
+;; javac for the SublimeLinter plugin.
+(define (javac-linter-settings classpath)
   (hash WORKING-DIRECTORY "."
         ARGS (list "-classpath"
-                   (filter-path (string-append (get-classpath) (get-paths-to-targets)))
+                   classpath
                    "-Xlint" "-Xlint:-serial")))
 
-(define LINTER-GENERATION-FUNCTION
-  (hash 'javac javac-linter-settings
-        null null))
 
-;; Dumps debug info at startup
+;; dump-parameters : -> void
+;; Logs the parameters for the script execution to the terminal.
 (define (dump-parameters)
   (log (string-append "Generating project settings~n"
                       "  Type: ~a~n"
@@ -94,27 +141,20 @@
                       "  Output File: ~a~n")
        (project-type) HOME-DIR CURRENT-PATH CURRENT-DIR OUTPUT-FILE))
 
-;; generate-folders-list : string (list of string) ->
+;; generate-folders-list : String, List of String -> List
+;; Given a path, and a list of folder patterns to exclude, this function
+;; generates the "folders" settings for a project.
 (define (generate-folders-list path folder-exclude-patterns)
   (list
     (hash FOLLOW-SYMLINKS #t
           PATH path
           FOLDER-EXCLUDE-PATTERNS folder-exclude-patterns)))
 
-;; Replaces certain path values with the sublime text variable versions.
-(define (filter-path path)
-  (define filtered-path path)
-  ;; This line doesn't work becuase ${home} is only valid in the linter settings.
-  ; (set! filtered-path (string-replace filtered-path HOME-DIR "${home}/"))
-  (set! filtered-path (string-replace filtered-path CURRENT-DIR "${project_base_name}"))
-  (set! filtered-path (string-trim filtered-path "/" #:left? #f))
-  filtered-path)
-
 (define (generate-maven-build-systems)
   (define (mvn-cmd cmd-name [name (string-titlecase cmd-name)])
     (hash CMD (list "mvn" "-B" "clean" cmd-name)
           NAME name
-          WORKING-DIR (filter-path CURRENT-PATH)))
+          WORKING-DIR (strip-trailing-slash CURRENT-PATH)))
   (list (hash-set (mvn-cmd "install" "Maven")
                    VARIANTS (map mvn-cmd (list "clean" "compile" "test" "package")))))
 
@@ -129,7 +169,7 @@
   (if (equal? (project-type) 'maven)
       (let ([linter (hash-ref LINTER-NAME-LOOKUP (project-type))])
         (hash LINTERS
-              (hash linter ((hash-ref LINTER-GENERATION-FUNCTION linter)))))
+              (hash linter (javac-linter-settings (get-classpath)))))
       (hash)))
 
 ;; Generates the entire settings object
@@ -147,5 +187,12 @@
         [project-settings (generate-settings)])
         (log "Writing '~a':~n~n~a~n" OUTPUT-FILE (jsexpr->bytes project-settings))
         (write-json project-settings output-file-port)))
+
+(provide strip-trailing-slash
+         extract-classpath-lines
+         assemble-complete-classpath
+         convert-paths-to-classpaths
+         javac-linter-settings
+         generate-folders-list)
 
 (create-project-file)
