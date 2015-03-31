@@ -1,0 +1,613 @@
+{
+  "events": [
+    {
+      "description": "Wii U",
+      "date": {
+        "day": 27,
+        "month": 11,
+        "year": 2014
+      }
+    },
+    {
+      "description": "Space Heater",
+      "date": {
+        "day": 22,
+        "month": 11,
+        "year": 2014
+      }
+    }
+  ],
+  "bills": [
+    {
+      "billDate": {
+        "day": 25,
+        "month": 9,
+        "year": 2013
+      },
+      "startDate": {
+        "day": 20,
+        "month": 8,
+        "year": 2013
+      },
+      "endDate": {
+        "day": 18,
+        "month": 9,
+        "year": 2013
+      },
+      "usage": 185,
+      "multiplier": 1,
+      "blocks": {
+        "1": {
+          "usage": 185,
+          "rate": 0.0835
+        }
+      },
+      "customerService": 6.25,
+      "telecomDebt": 5.35,
+      "municipalUse": 1.62,
+      "stateSalesTax": 1.10,
+      "totalAmount": 29.77
+    },
+    {
+      "billDate": {
+        "day": 28,
+        "month": 10,
+        "year": 2013
+      },
+      "startDate": {
+        "day": 18,
+        "month": 9,
+        "year": 2013
+      },
+      "endDate": {
+        "day": 19,
+        "month": 10,
+        "year": 2013
+      },
+      "usage": 165,
+      "multiplier": 1,
+      "blocks": {
+        "1": {
+          "usage": 65,
+          "rate": 0.0835
+        }
+      },
+      "customerService": 6.25,
+      "telecomDebt": 5.35,
+      "municipalUse": 1.52,
+      "stateSalesTax": 1.03,
+      "totalAmount": 27.93
+    },
+    {
+      "billDate": {
+        "day": 24,
+        "month": 11,
+        "year": 2013
+      },
+      "startDate": {
+        "day": 19,
+        "month": 10,
+        "year": 2013
+      },
+      "endDate": {
+        "day": 18,
+        "month": 11,
+        "year": 2013
+      },
+      "usage": 169,
+      "multiplier": 1,
+      "blocks": {
+        "1": {
+          "usage": 169,
+          "rate": 0.0835
+        }
+      },
+      "customerService": 6.25,
+      "telecomDebt": 5.35,
+      "municipalUse": 1.54,
+      "stateSalesTax": 1.04,
+      "totalAmount": 28.29
+    },
+    {
+      "billDate": {
+        "day": 26,
+        "month": 12,
+        "year": 2013
+      },
+      "startDate": {
+        "day": 18,
+        "month": 11,
+        "year": 2013
+      },
+      "endDate": {
+        "day": 18,
+        "month": 12,
+        "year": 2013
+      },
+      "usage": 145,
+      "multiplier": 1,
+      "blocks": {
+        "1": {
+          "usage": 145,
+          "rate": 0.0835
+        }
+      },
+      "customerService": 6.25,
+      "telecomDebt": 5.35,
+      "municipalUse": 1.42,
+      "stateSalesTax": 0.96,
+      "totalAmount": 26.09
+    },
+    {
+      "billDate": {
+        "month": 1,
+        "day": 27,
+        "year": 2014
+      },
+      "startDate": {
+        "month": 12,
+        "day": 18,
+        "year": 2013
+      },
+      "endDate": {
+        "month": 1,
+        "day": 17,
+        "year": 2014
+      },
+      "usage": 103,
+      "multiplier": 1,
+      "blocks": {
+        "1": {
+          "usage": 103,
+          "rate": 0.0835
+        }
+      },
+      "customerService": 6.25,
+      "telecomDebt": 5.35,
+      "municipalUse": 1.21,
+      "stateSalesTax": 0.82,
+      "totalAmount": 22.23
+    },
+    {
+      "billDate": {
+        "month": 2,
+        "day": 24,
+        "year": 2014
+      },
+      "startDate": {
+        "month": 1,
+        "day": 17,
+        "year": 2014
+      },
+      "endDate": {
+        "month": 2,
+        "day": 18,
+        "year": 2014
+      },
+      "usage": 148,
+      "multiplier": 1,
+      "blocks": {
+        "1": {
+          "usage": 148,
+          "rate": 0.0835
+        }
+      },
+      "customerService": 6.25,
+      "telecomDebt": 5.35,
+      "municipalUse": 1.44,
+      "stateSalesTax": 0.97,
+      "totalAmount": 26.37
+    },
+    {
+      "billDate": {
+        "month": 3,
+        "day": 26,
+        "year": 2014
+      },
+      "startDate": {
+        "month": 2,
+        "day": 18,
+        "year": 2014
+      },
+      "endDate": {
+        "month": 3,
+        "day": 20,
+        "year": 2014
+      },
+      "usage": 121,
+      "multiplier": 1,
+      "blocks": {
+        "1": {
+          "usage": 121,
+          "rate": 0.0835
+        }
+      },
+      "customerService": 6.25,
+      "telecomDebt": 5.35,
+      "municipalUse": 1.30,
+      "stateSalesTax": 0.88,
+      "residentialTransportationFee": 2.10,
+      "totalAmount": 25.98
+    },
+    {
+      "billDate": {
+        "month": 4,
+        "day": 27,
+        "year": 2014
+      },
+      "startDate": {
+        "month": 3,
+        "day": 20,
+        "year": 2014
+      },
+      "endDate": {
+        "month": 4,
+        "day": 18,
+        "year": 2014
+      },
+      "usage": 129,
+      "multiplier": 1,
+      "blocks": {
+        "1": {
+          "usage": 129,
+          "rate": 0.0835
+        }
+      },
+      "customerService": 6.25,
+      "telecomDebt": 5.35,
+      "municipalUse": 1.34,
+      "stateSalesTax": 0.91,
+      "residentialTransportationFee": 2.10,
+      "totalAmount": 26.72
+    },
+    {
+      "billDate": {
+        "month": 5,
+        "day": 26,
+        "year": 2014
+      },
+      "startDate": {
+        "month": 4,
+        "day": 18,
+        "year": 2014
+      },
+      "endDate": {
+        "month": 5,
+        "day": 20,
+        "year": 2014
+      },
+      "usage": 202,
+      "multiplier": 1,
+      "blocks": {
+        "1": {
+          "usage": 202,
+          "rate": 0.0835
+        }
+      },
+      "customerService": 6.25,
+      "telecomDebt": 5.35,
+      "municipalUse": 1.71,
+      "stateSalesTax": 1.16,
+      "residentialTransportationFee": 2.10,
+      "totalAmount": 33.44
+    },
+    {
+      "billDate": {
+        "month": 6,
+        "day": 25,
+        "year": 2014
+      },
+      "startDate": {
+        "month": 5,
+        "day": 20,
+        "year": 2014
+      },
+      "endDate": {
+        "month": 6,
+        "day": 19,
+        "year": 2014
+      },
+      "usage": 219,
+      "multiplier": 1,
+      "blocks": {
+        "1": {
+          "usage": 219,
+          "rate": 0.0835
+        }
+      },
+      "customerService": 6.25,
+      "telecomDebt": 5.35,
+      "municipalUse": 1.79,
+      "stateSalesTax": 1.21,
+      "residentialTransportationFee": 2.10,
+      "totalAmount": 33.99
+    },
+    {
+      "billDate": {
+        "month": 7,
+        "day": 27,
+        "year": 2014
+      },
+      "startDate": {
+        "month": 6,
+        "day": 19,
+        "year": 2014
+      },
+      "endDate": {
+        "month": 7,
+        "day": 21,
+        "year": 2014
+      },
+      "usage": 295,
+      "multiplier": 1,
+      "blocks": {
+        "1": {
+          "usage": 295,
+          "rate": 0.0835
+        }
+      },
+      "customerService": 6.25,
+      "telecomDebt": 5.35,
+      "municipalUse": 2.17,
+      "stateSalesTax": 1.47,
+      "residentialTransportationFee": 2.10,
+      "totalAmount": 41.97
+    },
+    {
+      "billDate": {
+        "month": 8,
+        "day": 26,
+        "year": 2014
+      },
+      "startDate": {
+        "month": 7,
+        "day": 21,
+        "year": 2014
+      },
+      "endDate": {
+        "month": 8,
+        "day": 19,
+        "year": 2014
+      },
+      "usage": 302,
+      "multiplier": 1,
+      "blocks": {
+        "1": {
+          "usage": 302,
+          "rate": 0.0835
+        }
+      },
+      "customerService": 6.25,
+      "telecomDebt": 5.35,
+      "municipalUse": 2.21,
+      "stateSalesTax": 1.49,
+      "residentialTransportationFee": 2.10,
+      "totalAmount": 42.62
+    },
+    {
+      "billDate": {
+        "month": 9,
+        "day": 25,
+        "year": 2014
+      },
+      "startDate": {
+        "month": 8,
+        "day": 19,
+        "year": 2014
+      },
+      "endDate": {
+        "month": 9,
+        "day": 18,
+        "year": 2014
+      },
+      "usage": 211,
+      "multiplier": 1,
+      "blocks": {
+        "1": {
+          "usage": 211,
+          "rate": 0.0835
+        }
+      },
+      "customerService": 6.25,
+      "telecomDebt": 5.35,
+      "municipalUse": 1.75,
+      "stateSalesTax": 1.19,
+      "residentialTransportationFee": 2.10,
+      "totalAmount": 34.26
+    },
+    {
+      "billDate": {
+        "month": 10,
+        "day": 27,
+        "year": 2014
+      },
+      "startDate": {
+        "month": 9,
+        "day": 18,
+        "year": 2014
+      },
+      "endDate": {
+        "month": 10,
+        "day": 20,
+        "year": 2014
+      },
+      "usage": 172,
+      "multiplier": 1,
+      "blocks": {
+        "1": {
+          "usage": 172,
+          "rate": 0.0835
+        }
+      },
+      "customerService": 6.25,
+      "telecomDebt": 5.35,
+      "municipalUse": 1.56,
+      "stateSalesTax": 1.05,
+      "residentialTransportationFee": 2.10,
+      "totalAmount": 30.67
+    },
+    {
+      "billDate": {
+        "month": 11,
+        "day": 25,
+        "year": 2014
+      },
+      "startDate": {
+        "month": 10,
+        "day": 20,
+        "year": 2014
+      },
+      "endDate": {
+        "month": 11,
+        "day": 18,
+        "year": 2014
+      },
+      "usage": 199,
+      "multiplier": 1,
+      "blocks": {
+        "1": {
+          "usage": 199,
+          "rate": 0.0835
+        }
+      },
+      "customerService": 6.25,
+      "telecomDebt": 5.35,
+      "municipalUse": 1.69,
+      "stateSalesTax": 1.15,
+      "residentialTransportationFee": 2.10,
+      "totalAmount": 33.16
+    },
+    {
+      "billDate": {
+        "month": 12,
+        "day": 28,
+        "year": 2014
+      },
+      "startDate": {
+        "month": 11,
+        "day": 18,
+        "year": 2014
+      },
+      "endDate": {
+        "month": 12,
+        "day": 18,
+        "year": 2014
+      },
+      "usage": 380,
+      "multiplier": 1,
+      "blocks": {
+        "1": {
+          "usage": 380,
+          "rate": 0.0835
+        }
+      },
+      "customerService": 6.25,
+      "telecomDebt": 5.35,
+      "municipalUse": 2.60,
+      "stateSalesTax": 1.76,
+      "residentialTransportationFee": 2.10,
+      "totalAmount": 49.79
+    },
+    {
+      "billDate": {
+        "month": 1,
+        "day": 26,
+        "year": 2015
+      },
+      "startDate": {
+        "month": 12,
+        "day": 18,
+        "year": 2014
+      },
+      "endDate": {
+        "month": 1,
+        "day": 19,
+        "year": 2015
+      },
+      "usage": 583,
+      "multiplier": 1,
+      "blocks": {
+        "1": {
+          "usage": 500,
+          "rate": 0.0835
+        },
+        "2": {
+          "usage": 83,
+          "rate": 0.0970
+        }
+      },
+      "customerService": 6.25,
+      "telecomDebt": 5.35,
+      "municipalUse": 3.68,
+      "stateSalesTax": 2.49,
+      "residentialTransportationFee": 2.10,
+      "totalAmount": 69.67
+    },
+    {
+      "billDate": {
+        "month": 2,
+        "day": 23,
+        "year": 2015
+      },
+      "startDate": {
+        "month": 1,
+        "day": 19,
+        "year": 2015
+      },
+      "endDate": {
+        "month": 2,
+        "day": 18,
+        "year": 2015
+      },
+      "usage": 541,
+      "multiplier": 1,
+      "blocks": {
+        "1": {
+          "usage": 500,
+          "rate": 0.0835
+        },
+        "2": {
+          "usage": 41,
+          "rate": 0.0970
+        }
+      },
+      "customerService": 6.25,
+      "telecomDebt": 5.35,
+      "municipalUse": 3.44,
+      "stateSalesTax": 2.33,
+      "residentialTransportationFee": 2.10,
+      "totalAmount": 65.20
+    },
+    {
+      "billDate": {
+        "month": 3,
+        "day": 26,
+        "year": 2015
+      },
+      "startDate": {
+        "month": 2,
+        "day": 18,
+        "year": 2015
+      },
+      "endDate": {
+        "month": 3,
+        "day": 20,
+        "year": 2015
+      },
+      "usage": 440,
+      "multiplier": 1,
+      "blocks": {
+        "1": {
+          "usage": 440,
+          "rate": 0.0835
+        }
+      },
+      "customerService": 6.25,
+      "telecomDebt": 5.35,
+      "municipalUse": 2.90,
+      "stateSalesTax": 1.96,
+      "residentialTransportationFee": 2.10,
+      "totalAmount": 55.30
+    }
+  ]
+}
