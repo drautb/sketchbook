@@ -38,6 +38,15 @@
 ;; and then the whole bitmap-dc% can be plastered onto the actual dc%
 ;; all at once: http://docs.racket-lang.org/draw/bitmap-dc_.html?q=
 ;; I think this might help the FPS.
+;;
+;; Ok, so using a backbuffer bitmap-dc% does improve performance a bit.
+;; Rendering 437 block textures, with an empty update, takes us up to
+;; about 43 FPS, so that's about double what we were getting before.
+;;
+;; If I fill update back in, so we do the whole quadtree/collision logic,
+;; we can run at about 26 FPS with 437 blocks. So with the only change
+;; being the backbuffer, we went from 18 FPS, up to 26 FPS. So not huge,
+;; but better.
 
 (require racket/gui
          racket/performance-hint
@@ -59,6 +68,9 @@
 
 (define WINDOW-WIDTH (* GRID-WIDTH BLOCK-SIZE))
 (define WINDOW-HEIGHT (* GRID-HEIGHT BLOCK-SIZE))
+
+(define BACKBUFFER-IMG (make-bitmap WINDOW-WIDTH WINDOW-HEIGHT))
+(define BACKBUFFER (new bitmap-dc% [bitmap BACKBUFFER-IMG]))
 
 (define MS-PER-SECOND 1000)
 (define FRAME-SAMPLE-COUNT 30)
@@ -183,35 +195,34 @@
 
 ;; Updates the simulation
 (define (tick delta)
-  ; (send my-quadtree clear)
-  ; (for ([b (in-list blocks)])
-  ;   (set-block-colliding! b #f)
-  ;   (set-bbox-x! b (+ (bbox-x b) (* (block-x-vel b) delta)))
-  ;   (set-bbox-y! b (+ (bbox-y b) (* (block-y-vel b) delta)))
-  ;   (let* ([x (bbox-x b)][y (bbox-y b)]
-  ;          [width (bbox-width b)][height (bbox-height b)]
-  ;          [x2 (+ x width)][y2 (+ y height)])
-  ;     (cond [(< x 0)
-  ;            (set-bbox-x! b 0)
-  ;            (set-block-x-vel! b (* -1 (block-x-vel b)))]
-  ;           [(> x2 WINDOW-WIDTH)
-  ;            (set-bbox-x! b (- WINDOW-WIDTH width))
-  ;            (set-block-x-vel! b (* -1 (block-x-vel b)))]
-  ;           [(< y 0)
-  ;            (set-bbox-y! b 0)
-  ;            (set-block-y-vel! b (* -1 (block-y-vel b)))]
-  ;           [(> y2 WINDOW-HEIGHT)
-  ;            (set-bbox-y! b (- WINDOW-HEIGHT height))
-  ;            (set-block-y-vel! b (* -1 (block-y-vel b)))]))
-  ;   (send my-quadtree insert b))
-  ; (for ([b (in-list blocks)])
-  ;   (let ([candidates (remove b (send my-quadtree get-candidates b))])
-  ;     (for ([b2 (in-list candidates)])
-  ;       (when (intersect? b b2)
-  ;         (set-block-colliding! b #t)
-  ;         (set-block-colliding! b2 #t)))))
-  (void)
-  )
+  (send my-quadtree clear)
+  (for ([b (in-list blocks)])
+    (set-block-colliding! b #f)
+    (set-bbox-x! b (+ (bbox-x b) (* (block-x-vel b) delta)))
+    (set-bbox-y! b (+ (bbox-y b) (* (block-y-vel b) delta)))
+    (let* ([x (bbox-x b)][y (bbox-y b)]
+           [width (bbox-width b)][height (bbox-height b)]
+           [x2 (+ x width)][y2 (+ y height)])
+      (cond [(< x 0)
+             (set-bbox-x! b 0)
+             (set-block-x-vel! b (* -1 (block-x-vel b)))]
+            [(> x2 WINDOW-WIDTH)
+             (set-bbox-x! b (- WINDOW-WIDTH width))
+             (set-block-x-vel! b (* -1 (block-x-vel b)))]
+            [(< y 0)
+             (set-bbox-y! b 0)
+             (set-block-y-vel! b (* -1 (block-y-vel b)))]
+            [(> y2 WINDOW-HEIGHT)
+             (set-bbox-y! b (- WINDOW-HEIGHT height))
+             (set-block-y-vel! b (* -1 (block-y-vel b)))]))
+    (send my-quadtree insert b))
+  (for ([b (in-list blocks)])
+    (let ([candidates (remove b (send my-quadtree get-candidates b))])
+      (for ([b2 (in-list candidates)])
+        (when (intersect? b b2)
+          (set-block-colliding! b #t)
+          (set-block-colliding! b2 #t))))))
+  ; (void))
 
 (define (draw-framerate dc frames)
   (when (> (length frames) 1)
@@ -225,17 +236,19 @@
 
 ;; Draws the simulation
 (define (draw-world canvas dc)
+  (send BACKBUFFER clear)
   (unless (eq? RENDERING 'none)
-    (when (eq? RENDERING 'lines) (send my-quadtree draw dc))
+    (when (eq? RENDERING 'lines) (send my-quadtree draw BACKBUFFER))
     (if (eq? RENDERING 'lines)
-        (begin (send dc set-brush "white" 'transparent)
+        (begin (send BACKBUFFER set-brush "white" 'transparent)
                (for ([b (in-list blocks)])
-                 (send dc set-pen "blue" 1 'solid)
-                 (when (block-colliding b) (send dc set-pen "red" 1 'solid))
-                 (draw-bbox dc b)))
+                 (send BACKBUFFER set-pen "blue" 1 'solid)
+                 (when (block-colliding b) (send BACKBUFFER set-pen "red" 1 'solid))
+                 (draw-bbox BACKBUFFER b)))
         (begin (for ([b (in-list blocks)])
-                 (draw-block dc b)))))
-  (draw-framerate dc frames))
+                 (draw-block BACKBUFFER b)))))
+  (draw-framerate BACKBUFFER frames)
+  (send dc draw-bitmap BACKBUFFER-IMG 0 0))
 
 ;; GUI stuff
 (define my-frame (new (class frame% (super-new)
