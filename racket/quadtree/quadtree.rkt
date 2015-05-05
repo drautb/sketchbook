@@ -4,7 +4,9 @@
 ;; for fast collision detection.
 
 (require racket/gui
+         racket/performance-hint
          profile
+         ; profile/render-graphviz)
          profile/render-text)
 
 (define BLOCK-SIZE 24)
@@ -21,7 +23,7 @@
 (define MAX-OBJECTS 10)
 (define MAX-LEVELS 5)
 
-(define NUM-BLOCKS 100)
+(define NUM-BLOCKS 250)
 (define MIN-BLOCK-PIXELS-PER-SECOND (* 2 BLOCK-SIZE))
 (define MAX-BLOCK-PIXELS-PER-SECOND (* 10 BLOCK-SIZE))
 
@@ -35,11 +37,11 @@
 
 (struct block (colliding x-vel y-vel) #:super struct:bbox #:mutable #:transparent)
 
-(define (intersect? bbox-1 bbox-2)
+(define-inline (intersect? bbox-1 bbox-2)
   (let* ([min-x1 (bbox-x bbox-1)][min-y1 (bbox-y bbox-1)]
-         [max-x1 (+ min-x1 (bbox-width bbox-1))][max-y1 (+ min-y1 (bbox-height bbox-1))]
-         [min-x2 (bbox-x bbox-2)][min-y2 (bbox-y bbox-2)]
-         [max-x2 (+ min-x2 (bbox-width bbox-2))][max-y2 (+ min-y2 (bbox-height bbox-2))])
+                                 [max-x1 (+ min-x1 (bbox-width bbox-1))][max-y1 (+ min-y1 (bbox-height bbox-1))]
+                                 [min-x2 (bbox-x bbox-2)][min-y2 (bbox-y bbox-2)]
+                                 [max-x2 (+ min-x2 (bbox-width bbox-2))][max-y2 (+ min-y2 (bbox-height bbox-2))])
     (and (< min-x1 max-x2) (> max-x1 min-x2)
          (< min-y1 max-y2) (> max-y1 min-y2))))
 
@@ -51,71 +53,72 @@
   (class object% (super-new)
     (init level)
     (init bounding-box)
+
     (define current-level level)
     (define bounds bounding-box)
     (define objects '())
     (define nodes '())
 
     (define/public (clear)
-                   (set! objects '())
-                   (map (λ (node)
-                          (send node clear))
-                        nodes))
+      (set! objects '())
+      (map (λ (node)
+             (send node clear))
+           nodes))
     (define/public (insert b)
-                   (let ([index (get-index b)])
-                     (cond [(and (not (empty? nodes)) (not (= -1 index)))
-                            (send (list-ref nodes index) insert b)]
-                           [else (add-object b)
-                            (when (and (> (length objects) MAX-OBJECTS) (< current-level MAX-LEVELS))
-                              (when (empty? nodes) (split))
-                              (set! objects
-                                    (remove* (list null) (map (λ (n)
-                                                                (let ([idx (get-index n)])
-                                                                  (if (= -1 idx)
-                                                                      n
-                                                                      (begin (send (list-ref nodes idx) insert n) null))))
-                                                              objects))))])))
+      (let ([index (get-index b)])
+        (cond [(and (not (empty? nodes)) (not (= -1 index)))
+               (send (list-ref nodes index) insert b)]
+              [else (add-object b)
+                    (when (and (> (length objects) MAX-OBJECTS) (< current-level MAX-LEVELS))
+                      (when (empty? nodes) (split))
+                      (set! objects
+                            (remove* (list null) (map (begin-encourage-inline (λ (n)
+                                                        (let ([idx (get-index n)])
+                                                          (if (= -1 idx)
+                                                              n
+                                                              (begin (send (list-ref nodes idx) insert n) null)))))
+                                                      objects))))])))
     (define/public (get-candidates b)
-                   (let ([idx (get-index b)])
-                     (if (and (not (= -1 idx)) (not (empty? nodes)))
-                         (append objects (send (list-ref nodes idx) get-candidates b))
-                         objects)))
+      (let ([idx (get-index b)])
+        (if (and (not (= -1 idx)) (not (empty? nodes)))
+            (append objects (send (list-ref nodes idx) get-candidates b))
+            objects)))
     (define/public (draw dc)
-                   (send dc set-pen "black" 1 'solid)
-                   (send dc set-brush "white" 'transparent)
-                   (when (and (empty? nodes)
-                              (not (empty? objects)))
-                     (draw-bbox dc bounds))
-                   (for ([n nodes])
-                     (send n draw dc)))
+      (send dc set-pen "black" 1 'solid)
+      (send dc set-brush "white" 'transparent)
+      (when (and (empty? nodes)
+                 (not (empty? objects)))
+        (draw-bbox dc bounds))
+      (for ([n (in-list nodes)])
+        (send n draw dc)))
 
     (define/private (split)
-                    (let ([new-level (add1 current-level)]
-                          [subwidth (/ (bbox-width bounds) 2)]
-                          [subheight (/ (bbox-height bounds) 2)]
-                          [x (bbox-x bounds)]
-                          [y (bbox-y bounds)])
-                      (set! nodes
-                            (list (new quadtree% [level new-level][bounding-box (bbox x y subwidth subheight)])
-                                  (new quadtree% [level new-level][bounding-box (bbox (+ x subwidth) y subwidth subheight)])
-                                  (new quadtree% [level new-level][bounding-box (bbox (+ x subwidth) (+ y subheight) subwidth subheight)])
-                                  (new quadtree% [level new-level][bounding-box (bbox x (+ y subheight) subwidth subheight)])))))
+      (let ([new-level (add1 current-level)]
+            [subwidth (/ (bbox-width bounds) 2)]
+            [subheight (/ (bbox-height bounds) 2)]
+            [x (bbox-x bounds)]
+            [y (bbox-y bounds)])
+        (set! nodes
+              (list (new quadtree% [level new-level][bounding-box (bbox x y subwidth subheight)])
+                    (new quadtree% [level new-level][bounding-box (bbox (+ x subwidth) y subwidth subheight)])
+                    (new quadtree% [level new-level][bounding-box (bbox (+ x subwidth) (+ y subheight) subwidth subheight)])
+                    (new quadtree% [level new-level][bounding-box (bbox x (+ y subheight) subwidth subheight)])))))
     (define/private (get-index b)
-                    (let* ([mid-x (+ (bbox-x bounds) (/ (bbox-width bounds) 2))]
-                           [mid-y (+ (bbox-y bounds) (/ (bbox-height bounds) 2))]
-                           [x (bbox-x b)][y (bbox-y b)]
-                           [x2 (+ x (bbox-width b))][y2 (+ y (bbox-height b))]
-                           [top-half (and (< y mid-y) (< y2 mid-y))]
-                           [bottom-half (> y mid-y)]
-                           [left-half (and (< x mid-x) (< x2 mid-x))]
-                           [right-half (> x mid-x)])
-                      (cond [(and top-half left-half) 0]
-                            [(and top-half right-half) 1]
-                            [(and bottom-half right-half) 2]
-                            [(and bottom-half left-half) 3]
-                            [else -1])))
+      (let* ([mid-x (+ (bbox-x bounds) (/ (bbox-width bounds) 2))]
+             [mid-y (+ (bbox-y bounds) (/ (bbox-height bounds) 2))]
+             [x (bbox-x b)][y (bbox-y b)]
+             [x2 (+ x (bbox-width b))][y2 (+ y (bbox-height b))]
+             [top-half (and (< y mid-y) (< y2 mid-y))]
+             [bottom-half (> y mid-y)]
+             [left-half (and (< x mid-x) (< x2 mid-x))]
+             [right-half (> x mid-x)])
+        (cond [(and top-half left-half) 0]
+              [(and top-half right-half) 1]
+              [(and bottom-half right-half) 2]
+              [(and bottom-half left-half) 3]
+              [else -1])))
     (define/private (add-object bbox)
-                    (set! objects (cons bbox objects)))))
+      (set! objects (cons bbox objects)))))
 
 (define my-quadtree (new quadtree%
                          [level 0]
@@ -136,13 +139,13 @@
 ;; Updates the simulation
 (define (tick delta)
   (send my-quadtree clear)
-  (for ([b blocks])
+  (for ([b (in-list blocks)])
     (set-block-colliding! b #f)
     (set-bbox-x! b (+ (bbox-x b) (* (block-x-vel b) delta)))
     (set-bbox-y! b (+ (bbox-y b) (* (block-y-vel b) delta)))
     (let* ([x (bbox-x b)][y (bbox-y b)]
-           [width (bbox-width b)][height (bbox-height b)]
-           [x2 (+ x width)][y2 (+ y height)])
+                         [width (bbox-width b)][height (bbox-height b)]
+                         [x2 (+ x width)][y2 (+ y height)])
       (cond [(< x 0)
              (set-bbox-x! b 0)
              (set-block-x-vel! b (* -1 (block-x-vel b)))]
@@ -156,9 +159,9 @@
              (set-bbox-y! b (- WINDOW-HEIGHT height))
              (set-block-y-vel! b (* -1 (block-y-vel b)))]))
     (send my-quadtree insert b))
-  (for ([b blocks])
+  (for ([b (in-list blocks)])
     (let ([candidates (remove b (send my-quadtree get-candidates b))])
-      (for ([b2 candidates])
+      (for ([b2 (in-list candidates)])
         (when (intersect? b b2)
           (set-block-colliding! b #t)
           (set-block-colliding! b2 #t))))))
@@ -177,7 +180,7 @@
 (define (draw-world canvas dc)
   (send my-quadtree draw dc)
   (send dc set-brush "white" 'transparent)
-  (for ([b blocks])
+  (for ([b (in-list blocks)])
     (send dc set-pen "blue" 1 'solid)
     (when (block-colliding b) (send dc set-pen "red" 1 'solid))
     (draw-bbox dc b))
@@ -211,9 +214,19 @@
   (flush-output)
   (main-loop))
 
+(define (run-profiler [repetitions 1])
+  (profile-thunk (thunk (tick 0.001))
+                 #:repeat repetitions
+                 #:render render))
+
 (random-seed (current-seconds))
-(send my-frame show #t)
-(queue-callback main-loop #f)
 
 (for ([n NUM-BLOCKS])
   (add-block))
+
+;; UNCOMMENT THESE TWO LINES TO RUN THE SIMULATION
+(send my-frame show #t)
+(queue-callback main-loop #f)
+
+;; UNCOMMENT THIS LINE TO RUN THE PROFILER
+; (run-profiler 10000)
