@@ -26,9 +26,18 @@
 ;; If I disable the collision detection, so we're just doing the
 ;; boundary checks and quadtree insertion, we get 23 FPS with
 ;; textures, and 21 with lines. Again, fairly close, and just a few
-;; FPS higher than the previous test. So Collision detection isn't
-;; the expensive part. It's the quadtree construction that is the
-;; expensive part.
+;; FPS higher than the previous test.
+;;
+;; Rendering is still the most expensive part. Even if the update
+;; function does _nothing_, rendering 437 blocks (textures) still
+;; takes the FPS down to about 24. (So the quadtree/colllision detection
+;; was only taking a few PFS) With only 219 blocks, we can get to
+;; about 43 FPS.
+;;
+;; NEXT STEP: a bitmap-dc% can be used to stage content for rendering,
+;; and then the whole bitmap-dc% can be plastered onto the actual dc%
+;; all at once: http://docs.racket-lang.org/draw/bitmap-dc_.html?q=
+;; I think this might help the FPS.
 
 (require racket/gui
          racket/performance-hint
@@ -38,7 +47,7 @@
 
 
 (define NUM-BLOCKS 437)
-(define RENDERING 'lines) ;; Should be 'texture 'lines or 'none
+(define RENDERING 'texture) ;; Should be 'texture 'lines or 'none
 
 (define BLOCK-SIZE 24)
 
@@ -174,33 +183,34 @@
 
 ;; Updates the simulation
 (define (tick delta)
-  (send my-quadtree clear)
-  (for ([b (in-list blocks)])
-    (set-block-colliding! b #f)
-    (set-bbox-x! b (+ (bbox-x b) (* (block-x-vel b) delta)))
-    (set-bbox-y! b (+ (bbox-y b) (* (block-y-vel b) delta)))
-    (let* ([x (bbox-x b)][y (bbox-y b)]
-           [width (bbox-width b)][height (bbox-height b)]
-           [x2 (+ x width)][y2 (+ y height)])
-      (cond [(< x 0)
-             (set-bbox-x! b 0)
-             (set-block-x-vel! b (* -1 (block-x-vel b)))]
-            [(> x2 WINDOW-WIDTH)
-             (set-bbox-x! b (- WINDOW-WIDTH width))
-             (set-block-x-vel! b (* -1 (block-x-vel b)))]
-            [(< y 0)
-             (set-bbox-y! b 0)
-             (set-block-y-vel! b (* -1 (block-y-vel b)))]
-            [(> y2 WINDOW-HEIGHT)
-             (set-bbox-y! b (- WINDOW-HEIGHT height))
-             (set-block-y-vel! b (* -1 (block-y-vel b)))]))
-    (send my-quadtree insert b))
+  ; (send my-quadtree clear)
+  ; (for ([b (in-list blocks)])
+  ;   (set-block-colliding! b #f)
+  ;   (set-bbox-x! b (+ (bbox-x b) (* (block-x-vel b) delta)))
+  ;   (set-bbox-y! b (+ (bbox-y b) (* (block-y-vel b) delta)))
+  ;   (let* ([x (bbox-x b)][y (bbox-y b)]
+  ;          [width (bbox-width b)][height (bbox-height b)]
+  ;          [x2 (+ x width)][y2 (+ y height)])
+  ;     (cond [(< x 0)
+  ;            (set-bbox-x! b 0)
+  ;            (set-block-x-vel! b (* -1 (block-x-vel b)))]
+  ;           [(> x2 WINDOW-WIDTH)
+  ;            (set-bbox-x! b (- WINDOW-WIDTH width))
+  ;            (set-block-x-vel! b (* -1 (block-x-vel b)))]
+  ;           [(< y 0)
+  ;            (set-bbox-y! b 0)
+  ;            (set-block-y-vel! b (* -1 (block-y-vel b)))]
+  ;           [(> y2 WINDOW-HEIGHT)
+  ;            (set-bbox-y! b (- WINDOW-HEIGHT height))
+  ;            (set-block-y-vel! b (* -1 (block-y-vel b)))]))
+  ;   (send my-quadtree insert b))
   ; (for ([b (in-list blocks)])
   ;   (let ([candidates (remove b (send my-quadtree get-candidates b))])
   ;     (for ([b2 (in-list candidates)])
   ;       (when (intersect? b b2)
   ;         (set-block-colliding! b #t)
   ;         (set-block-colliding! b2 #t)))))
+  (void)
   )
 
 (define (draw-framerate dc frames)
