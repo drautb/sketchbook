@@ -608,6 +608,37 @@
       "stateSalesTax": 1.96,
       "residentialTransportationFee": 2.10,
       "totalAmount": 55.30
+    },
+    {
+      "billDate": {
+        "month": 4,
+        "day": 26,
+        "year": 15
+      },
+      "startDate": {
+        "month": 3,
+        "day": 20,
+        "year": 15
+      },
+      "endDate": {
+        "month": 4,
+        "day": 20,
+        "year": 15
+      },
+      "usage": 427,
+      "multiplier": 1,
+      "blocks": {
+        "1": {
+          "usage": 427,
+          "rate": 0.0835
+        }
+      },
+      "customerService": 6.25,
+      "telecomDebt": 5.35,
+      "municipalUse": 2.83,
+      "stateSalesTax": 1.92,
+      "residentialTransportationFee": 2.10,
+      "totalAmount": 54.10
     }
   ]
 }
