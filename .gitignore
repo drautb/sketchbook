@@ -4,6 +4,6 @@
 fs-eng/
 
 # For generated files
-racket/sicp/*.css
-racket/sicp/*.js
-racket/sicp/*.html
+racket/sicp/**/*.css
+racket/sicp/**/*.js
+racket/sicp/**/*.html
