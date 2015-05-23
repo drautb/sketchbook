@@ -47,6 +47,10 @@
 ;; we can run at about 26 FPS with 437 blocks. So with the only change
 ;; being the backbuffer, we went from 18 FPS, up to 26 FPS. So not huge,
 ;; but better.
+;;
+;; I remember seeing different FPS when I use an external display.
+;;
+;; What if I convert everything to typed racket?
 
 (require racket/gui
          racket/performance-hint
