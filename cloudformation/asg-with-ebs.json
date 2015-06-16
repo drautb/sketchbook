@@ -1,0 +1,298 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "FamilySearch Splunk Forwarder Stack for external services. (AppDynamics, Heroku, etc.)",
+  "Parameters": {
+    "amiId": {
+      "Description": "AMI ID",
+      "Type": "String",
+      "Default": "ami-8fdc2ce4",
+      "AllowedPattern": "ami-[a-z0-9]*"
+    },
+    "vpcId": {
+      "Description": "VPC ID",
+      "Type": "String",
+      "Default": " vpc-d63d2ab4",
+      "AllowedPattern": "vpc-[a-z0-9]*"
+    },
+    "availabilityZones": {
+      "Description": "Availability Zones for the load balancers",
+      "Default": "us-east-1a,us-east-1b",
+      "Type": "CommaDelimitedList"
+    },
+    "dmzSubnets": {
+      "Description": "DMZ Subnets where ELB and EC2 instances will be created",
+      "Default": "subnet-6940741d,subnet-12c59254",
+      "Type": "CommaDelimitedList"
+    },
+    "sgSsh": {
+      "Description": "Security group ID for SSH access",
+      "Type": "String",
+      "Default": "sg-7b50b41e",
+      "AllowedPattern": "sg-[a-z0-9]*"
+    },
+    "instanceType": {
+      "Description": "Instance type",
+      "Default": "m3.xlarge",
+      "Type": "String"
+    },
+    "keyName": {
+      "Description": "SSH key name",
+      "Default": "vpc-instance",
+      "Type": "String"
+    }
+  },
+  "Resources": {
+    "sgForwarder": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "Allow 9990 from the ELB for the REST API (AppDynamics), 9997 for TCP forwarding, and 10514 for Heroku syslog drain.",
+        "VpcId": {
+          "Ref": "vpcId"
+        },
+        "SecurityGroupIngress": [
+          {
+            "IpProtocol": "tcp",
+            "FromPort": "9997",
+            "ToPort": "9997",
+            "CidrIp": "0.0.0.0/0"
+          },
+          {
+            "IpProtocol": "tcp",
+            "FromPort": "10514",
+            "ToPort": "10514",
+            "CidrIp": "0.0.0.0/0"
+          }
+        ]
+      }
+    },
+    "launchConfig": {
+      "Type": "AWS::AutoScaling::LaunchConfiguration",
+      "Properties": {
+        "AssociatePublicIpAddress": "true",
+        "BlockDeviceMappings": [
+          {
+            "DeviceName": "/dev/sdf",
+            "Ebs": {
+              "VolumeSize": "128"
+            }
+          }
+        ],
+        "ImageId": {
+          "Ref": "amiId"
+        },
+        "InstanceType": {
+          "Ref": "instanceType"
+        },
+        "InstanceMonitoring": "false",
+        "KeyName": {
+          "Ref": "keyName"
+        },
+        "SecurityGroups": [
+          {
+            "Ref": "sgSsh"
+          },
+          {
+            "Ref": "sgForwarder"
+          }
+        ],
+        "UserData": {
+          "Fn::Base64": {
+            "Fn::Join": [
+              "",
+              [
+                "#!/bin/bash -exv \n",
+                "resize2fs /dev/sdf\n",
+                "(which apt-get && apt-get update && apt-get -y install ca-certificates) || ",
+                "(which yum && yum clean all && yum -y install ca-certificates)\n",
+                "wget -q https://dptservices.familysearch.org/bootstrap/aws-cfn-bootstrap.sh -O- | ",
+                "RESOURCE_NAME=\"asgForwarder\"",
+                " SIGNAL_URL=\"",
+                {
+                  "Ref": "InstanceLaunchWaitHandle"
+                },
+                "\" STACK_ID=\"",
+                {
+                  "Ref": "AWS::StackId"
+                },
+                "\" REGION=\"",
+                {
+                  "Ref": "AWS::Region"
+                },
+                "\" bash >& /tmp/userdata.log \n"
+              ]
+            ]
+          }
+        }
+      }
+    },
+    "asgForwarder": {
+      "Type": "AWS::AutoScaling::AutoScalingGroup",
+      "UpdatePolicy": {
+        "AutoScalingRollingUpdate": {
+          "MinInstancesInService": "1",
+          "MaxBatchSize": "1",
+          "PauseTime": "PT05M0S"
+        }
+      },
+      "Metadata": {
+        "AWS::CloudFormation::Init": {
+          "configSets": {
+            "configSet0": [],
+            "configSet1": [
+              {
+                "ConfigSet": "configSet0"
+              },
+              "update_ulimit",
+              "configCfn"
+            ],
+            "configSet2": [
+              {
+                "ConfigSet": "configSet1"
+              },
+              "install_packages"
+            ],
+            "configSetUpdate": [
+              "configAptUpdate"
+            ],
+            "default": [
+              {
+                "ConfigSet": "configSet2"
+              }
+            ]
+          },
+          "update_ulimit": {
+            "commands": {
+              "01set-soft-nofiles": {
+                "command": "echo 'splunk    soft    nofile    16384' >> /etc/security/limits.d/90-nofile.conf"
+              },
+              "02set-hard-nofiles": {
+                "command": "echo 'splunk    hard    nofile    16384' >> /etc/security/limits.d/90-nofile.conf"
+              },
+              "03increase-open-file-limit": {
+                "command": "ulimit -n 4096"
+              }
+            }
+          },
+          "configAptUpdate": {
+            "commands": {
+              "aptUpdate": {
+                "command": "aptitude update"
+              },
+              "aptVersions": {
+                "command": "echo -e \"$(date)\nfs-paas-aws-forwarder version: ${project.version}\" > /tmp/packageVersion"
+              },
+              "packageSplunkAgentUpgrade": {
+                "command": "aptitude -y install fs-splunk-agent"
+              },
+              "packageSplunkForwarderUpgrade": {
+                "command": "aptitude -y install fs-paas-aws-forwarder"
+              }
+            }
+          },
+          "configCfn": {
+            "files": {
+              "/etc/cfn/cfn-hup.conf": {
+                "content": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "[main]\n",
+                      "stack=",
+                      {
+                        "Ref": "AWS::StackName"
+                      },
+                      "\n",
+                      "region=",
+                      {
+                        "Ref": "AWS::Region"
+                      },
+                      "\n",
+                      "interval=2\n"
+                    ]
+                  ]
+                }
+              },
+              "/etc/cfn/hooks.d/cfn-auto-package-update.conf": {
+                "content": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "[cfn-auto-package-update-hook]\n",
+                      "triggers=post.update\n",
+                      "path=Resources.asgForwarder.Metadata.AWS::CloudFormation::Init\n",
+                      "action=/usr/local/bin/cfn-init -s ",
+                      {
+                        "Ref": "AWS::StackName"
+                      },
+                      " -r asgForwarder",
+                      " --region ",
+                      {
+                        "Ref": "AWS::Region"
+                      },
+                      " -c configSetUpdate\n",
+                      "runas=root\n"
+                    ]
+                  ]
+                }
+              }
+            }
+          },
+          "install_packages": {
+            "packages": {
+              "apt": {
+                "fs-paas-aws-forwarder": []
+              }
+            }
+          }
+        }
+      },
+      "Properties": {
+        "AvailabilityZones": {
+          "Ref": "availabilityZones"
+        },
+        "LaunchConfigurationName": {
+          "Ref": "launchConfig"
+        },
+        "Cooldown": 30,
+        "MinSize": "2",
+        "MaxSize": "2",
+        "DesiredCapacity": "2",
+        "HealthCheckGracePeriod": "600",
+        "HealthCheckType": "ELB",
+        "VPCZoneIdentifier": {
+          "Ref": "dmzSubnets"
+        },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": {
+              "Fn::Join": [
+                " - ",
+                [
+                  {
+                    "Ref": "AWS::StackName"
+                  },
+                  "Forwarder"
+                ]
+              ]
+            },
+            "PropagateAtLaunch": "true"
+          }
+        ]
+      }
+    },
+    "InstanceLaunchWaitCondition": {
+      "Type": "AWS::CloudFormation::WaitCondition",
+      "DependsOn": "asgForwarder",
+      "Properties": {
+        "Handle": {
+          "Ref": "InstanceLaunchWaitHandle"
+        },
+        "Timeout": "600"
+      }
+    },
+    "InstanceLaunchWaitHandle": {
+      "Type": "AWS::CloudFormation::WaitConditionHandle"
+    }
+  }
+}
