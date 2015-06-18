@@ -33,7 +33,7 @@
   (string-append "~a" (make-string (- COLUMN-WIDTH (string-length a)) #\space) "~a~n"))
 
 (define (show-latest-version-for-artifacts artifacts)
-  (for ([a artifacts])
+  (for ([a (sort artifacts string<?)])
     (let ([format-str (build-format-str a)])
       (printf format-str a (fetch-latest-artifact-version a)))))
 
