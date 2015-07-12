@@ -28,7 +28,7 @@ function SendConfirmationEmail(event) {
   var spreadsheet = SpreadsheetApp.getActiveSheet();
   var columns = spreadsheet.getRange(1, 1, 1, spreadsheet.getLastColumn()).getValues()[0];
 
-  var sendTo = event.values[7].toString();
+  var sendTo = event.values[2].toString();
 
   var messageBody = "<html><body><table border=\"1\"><tr><th>Question</th><th>Answer</th></tr>";
 
