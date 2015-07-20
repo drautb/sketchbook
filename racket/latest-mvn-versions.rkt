@@ -20,6 +20,7 @@
         (artifact APPROVED-REPO PAAS-GROUP "paas-sps-rds-common")
         (artifact APPROVED-REPO PAAS-GROUP "paas-sps-sas-utility")
         (artifact APPROVED-REPO PAAS-GROUP "paas-sps-common-test")
+        (artifact APPROVED-REPO PAAS-GROUP "paas-sps-beanstalk-testapp")
         (artifact APPROVED-REPO PAAS-GROUP "paas-sps-sns-testapp")
         (artifact APPROVED-REPO PAAS-GROUP "paas-sps-sqs-testapp")
         (artifact APPROVED-REPO PAAS-GROUP "paas-sps-s3-testapp")
