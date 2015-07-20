@@ -7,7 +7,7 @@ module BlueprintScraper
 
     FAMILY_SEARCH_ORGANIZATION = "fs-eng"
     BLUEPRINT_FILE = "blueprint.yml"
-    
+
     def initialize
       @github_client = Octokit::Client.new
       @github_client.auto_paginate = true
@@ -21,18 +21,32 @@ module BlueprintScraper
       puts "Found #{@repo_list.length} repositories in #{FAMILY_SEARCH_ORGANIZATION}."
 
       FileUtils.mkdir_p(FAMILY_SEARCH_ORGANIZATION)
-      @repo_list.each do |repo_full_name|
-        scrape_blueprint(repo_full_name)
+      @repo_list.each do |repo|
+        scrape_blueprint(repo[:full_name])
       end
 
       puts "Done."
     end
-    
+
+    def list_repositories
+      puts "Listing repositories...\n\n"
+
+      @repo_list = fetch_repositories
+      @repo_list.map { |r| r[:name] }.sort.each do |repo_name|
+        puts "#{repo_name}"
+      end
+
+      puts "\nDone. #{@repo_list.length} repositories found."
+    end
+
+    def list_blueprint_names
+
+    end
+
     private
 
     def fetch_repositories
-      repos = @github_client.organization_repositories(FAMILY_SEARCH_ORGANIZATION)
-      repos.map { |repo| repo[:full_name] }
+      @github_client.organization_repositories(FAMILY_SEARCH_ORGANIZATION)
     end
 
     def scrape_blueprint(repo_full_name)
@@ -72,6 +86,6 @@ module BlueprintScraper
       puts
       password
     end
-    
+
   end
 end
