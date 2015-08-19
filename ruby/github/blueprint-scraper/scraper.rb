@@ -39,8 +39,8 @@ module BlueprintScraper
       puts "\nDone. #{@repo_list.length} repositories found."
     end
 
-    def list_blueprint_names
-
+    def list_contributors(repo_name)
+      @github_client.contribs("#{FAMILY_SEARCH_ORGANIZATION}/#{repo_name}")
     end
 
     private
