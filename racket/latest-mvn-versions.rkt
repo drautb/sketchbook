@@ -24,6 +24,7 @@
         (artifact APPROVED-REPO PAAS-GROUP "paas-sps-sns-testapp")
         (artifact APPROVED-REPO PAAS-GROUP "paas-sps-sqs-testapp")
         (artifact APPROVED-REPO PAAS-GROUP "paas-sps-s3-testapp")
+        (artifact APPROVED-REPO PAAS-GROUP "paas-s3-utils")
         (artifact APPROVED-REPO PAAS-GROUP "paas-sps-artifact-manager")
         (artifact APPROVED-REPO PAAS-GROUP "paas-sps-rds-postgres-testapp")
         (artifact APPROVED-REPO PAAS-GROUP "paas-sps-hello-world-testapp")
@@ -31,6 +32,8 @@
         (artifact APPROVED-REPO PAAS-GROUP "paas-sps-config")
         (artifact APPROVED-REPO PAAS-GROUP "paas-sps-launcher")
         (artifact APPROVED-REPO PAAS-GROUP "paas-sysps-context")
+        (artifact APPROVED-REPO PAAS-GROUP "paas-github-facade")
+        (artifact APPROVED-REPO PAAS-GROUP "github-java-sdk")
         (artifact "thirdparty" "com.amazonaws" "aws-java-sdk-flow-build-tools")
         (artifact "central" "com.amazonaws" "aws-java-sdk")))
 
