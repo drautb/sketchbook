@@ -32,7 +32,6 @@
         (string-append str (expand remainder (second (member d DIVISORS))))))
   (expand n (first DIVISORS)))
 
-
 ;; TESTS
 (module+
   test
@@ -81,3 +80,6 @@
   (check-convert 90 "XC")
   (check-convert 900 "CM")
   )
+
+(time (for ([n 5000])
+        (convert n)))
