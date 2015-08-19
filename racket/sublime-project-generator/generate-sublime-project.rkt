@@ -7,19 +7,22 @@
 ;; CMD-LINE STUFF
 (define verbose-mode (make-parameter #f))
 (define project-type (make-parameter null))
+(define is-srvps (make-parameter #f))
 (define include-linter-settings (make-parameter #f))
 
 (define generator-settings
   (command-line
-   #:program "sublime-project generator"
-   #:once-each
-   [("-v" "--verbose") "Execute with verbose messages"
-                       (verbose-mode #t)]
-   [("-t" "--type") type
-                    "Specify the project type"
-                    (project-type (string->symbol type))]
-   [("-l" "--lint") "Include SublimeLinter settings"
-                    (include-linter-settings #t)]))
+    #:program "sublime-project generator"
+    #:once-each
+    [("-v" "--verbose") "Execute with verbose messages"
+     (verbose-mode #t)]
+    [("-t" "--type") type
+     "Specify the project type"
+     (project-type (string->symbol type))]
+    [("-s" "--srvps") "Generate special config for a service provisioner"
+     (is-srvps #t)]
+    [("-l" "--lint") "Include SublimeLinter settings"
+     (include-linter-settings #t)]))
 
 ;; todo: Macro that only prints things if --verbose is on.
 (define (log form . values)
@@ -59,6 +62,13 @@
   (hash 'maven 'javac
         null null))
 
+(define SRVPS-DEPENDENCIES
+  (list "paas-sps-common"
+        "paas-sps-config"
+        "paas-sps-common-test"
+        "paas-sps-launcher"
+        "paas-sps-context"))
+
 ;; strip-trailing-slash : String -> String
 ;; Strips a trailing slash from the input string
 (define (strip-trailing-slash str)
@@ -97,10 +107,14 @@
 ;; get-classpath : -> String
 ;; Executes a maven command to get the projects' classpaths, then assembles
 ;; and returns it using the functions above.
+;; The assembled classpath is a single string containing full paths to artifacts,
+;; delimited by ':'.
 (define (get-classpath)
   (log "Determining classpath for javac linter...")
   (let ([mvn-build-classpath-output (system->string "mvn dependency:build-classpath")])
-    (assemble-complete-classpath (extract-classpath-lines mvn-build-classpath-output))))
+    (assemble-complete-classpath
+      (append (extract-classpath-lines mvn-build-classpath-output)
+              (list (get-paths-to-targets))))))
 
 ;; convert-paths-to-classpaths : String -> String
 ;; Takes the output of a system find command, and converts each resulting
@@ -109,9 +123,9 @@
   (let ([paths (string-split paths "\n")])
     (string-trim
       (foldl (λ (next-path accumulated)
-             (string-append accumulated CLASSPATH-DELIMITER
-                            (string-replace (string-replace next-path "pom.xml" "target/classes") "./" "${project}/")))
-           "" paths)
+               (string-append accumulated CLASSPATH-DELIMITER
+                              (string-replace (string-replace next-path "pom.xml" "target/classes") "./" "${project}/")))
+             "" paths)
       CLASSPATH-DELIMITER)))
 
 ;; get-target-classpath : -> String
@@ -145,9 +159,19 @@
 ;; Given a path, and a list of folder patterns to exclude, this function
 ;; generates the "folders" settings for a project.
 (define (generate-folders-list path folder-exclude-patterns)
-  (list
+  (define default-list
+    (list
+      (hash FOLLOW-SYMLINKS #t
+            PATH path
+            FOLDER-EXCLUDE-PATTERNS folder-exclude-patterns)))
+  (if (is-srvps)
+      (append default-list (generate-srvps-folders-list folder-exclude-patterns))
+      default-list))
+
+(define (generate-srvps-folders-list folder-exclude-patterns)
+  (for/list ([dependency SRVPS-DEPENDENCIES])
     (hash FOLLOW-SYMLINKS #t
-          PATH path
+          PATH (string-append "/Users/drautb/GitHub/fs-eng/" dependency)
           FOLDER-EXCLUDE-PATTERNS folder-exclude-patterns)))
 
 (define (generate-maven-build-systems)
@@ -156,7 +180,7 @@
           NAME name
           WORKING-DIR (strip-trailing-slash CURRENT-PATH)))
   (list (hash-set (mvn-cmd "install" "Maven")
-                   VARIANTS (map mvn-cmd (list "clean" "compile" "test" "package")))))
+                  VARIANTS (map mvn-cmd (list "clean" "compile" "test" "package")))))
 
 ;; Generates the build systems for a project.
 (define (generate-build-systems)
@@ -185,8 +209,8 @@
 (define (create-project-file)
   (let ([output-file-port (open-output-file OUTPUT-FILE #:exists 'replace)]
         [project-settings (generate-settings)])
-        (log "Writing '~a':~n~n~a~n" OUTPUT-FILE (jsexpr->bytes project-settings))
-        (write-json project-settings output-file-port)))
+    (log "Writing '~a':~n~n~a~n" OUTPUT-FILE (jsexpr->bytes project-settings))
+    (write-json project-settings output-file-port)))
 
 (provide strip-trailing-slash
          extract-classpath-lines
