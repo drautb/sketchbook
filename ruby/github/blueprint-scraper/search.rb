@@ -19,6 +19,7 @@ class DataSet
   end
 
   def process_blueprint(blueprint_data)
+    return unless blueprint_data
     process_version(blueprint_data)
     if is_0_3?(blueprint_data)
       process_deploy_section(blueprint_data)
