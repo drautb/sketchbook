@@ -2,6 +2,8 @@
 *#*
 *.sublime-workspace
 fs-eng/
+node_modules
+pp6-info.json
 
 # For generated files
 racket/sicp/**/*.css
