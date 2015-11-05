@@ -1,3 +1,4 @@
+*.DS_Store
 *~
 *#*
 *.sublime-workspace
@@ -9,3 +10,7 @@ pp6-info.json
 racket/sicp/**/*.css
 racket/sicp/**/*.js
 racket/sicp/**/*.html
+
+# For generated java files
+target/
+*.class

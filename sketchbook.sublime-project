@@ -10,5 +10,18 @@
         "racket/sicp/*.html"
       ]
     }
-  ]
+  ],
+  "SublimeLinter": {
+    "linters": {
+      "javac": {
+        "working_directory": ".",
+        "args": [
+          "-classpath",
+          "/Users/drautb/GitHub/drautb/sketchbook/java/target/classes:/Users/drautb/.m2/repository/org/testng/testng/6.8.8/testng-6.8.8.jar:/Users/drautb/.m2/repository/org/beanshell/bsh/2.0b4/bsh-2.0b4.jar:/Users/drautb/.m2/repository/com/beust/jcommander/1.27/jcommander-1.27.jar",
+          "-Xlint",
+          "-Xlint:-serial"
+        ]
+      }
+    }
+  }
 }
