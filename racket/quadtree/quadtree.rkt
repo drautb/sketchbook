@@ -59,6 +59,7 @@
          profile/render-text)
 
 
+; (define NUM-BLOCKS 200)
 (define NUM-BLOCKS 437)
 (define RENDERING 'texture) ;; Should be 'texture 'lines or 'none
 
@@ -263,7 +264,8 @@
                       [min-width WINDOW-WIDTH]
                       [min-height WINDOW-HEIGHT]
                       [stretchable-width #f]
-                      [stretchable-height #f]))
+                      [stretchable-height #f]
+                      [style '(fullscreen-button)]))
 
 (define my-canvas (new canvas% [parent my-frame]
                        [paint-callback draw-world]))
@@ -294,6 +296,7 @@
 
 ;; UNCOMMENT THESE TWO LINES TO RUN THE SIMULATION
 (send my-frame show #t)
+; (send my-frame fullscreen #t)
 (queue-callback main-loop #f)
 
 ;; UNCOMMENT THIS LINE TO RUN THE PROFILER
