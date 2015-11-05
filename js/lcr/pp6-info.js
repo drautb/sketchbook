@@ -56,7 +56,7 @@ var extractQuorumMembers = function(families) {
 var quorumMembers = extractQuorumMembers(families);
 
 var emailList = quorumMembers.map(function(f) {
-  var email = f['headOfHouse']['email'];
+  var email = f['headOfHouse']['email'] || f['emailAddress'];
   if (email) {
     return email;
   }
