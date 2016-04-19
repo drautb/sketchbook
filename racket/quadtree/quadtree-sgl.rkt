@@ -1,72 +1,18 @@
 #lang racket
 
-;; This is a study for Greebles in which I implemented a Quadtree
-;; for fast collision detection.
-;;
-;; A fully-filled Greebles grid contains 23 * 19 = 437 blocks. On
-;; average, I would guess we'll only have about half that: 218.
-;;
-;; With rendering enabled, it can stay up at 60 FPS with up to about
-;; 100 blocks. Any more than that, it starts to deteriorate. When we
-;; get up to about 220 blocks, it hovers at 30 FPS.
-;;
-;; With rendering disabled, we can get up to about 470 blocks before
-;; we start dropping frames. (60 FPS) So now I'm wondering, if I'm
-;; rendering textures, not just lines, is the performance worse? Or
-;; do textures (the same texture) actually perform better?
-;;
-;; It looks like the performance is slightly better when rendering
-;; textures as opposed to just lines. With texture rendering, It
-;; hovers around 38 FPS with 220 blocks, instead of 30 FPS.
-;;
-;; I bumped the block count up to 437 to see how we perfrom at our max.
-;; With texture rendering, we get 18 FPS. With lines, we get 16, so
-;; the difference isn't as great.
-;;
-;; If I disable the collision detection, so we're just doing the
-;; boundary checks and quadtree insertion, we get 23 FPS with
-;; textures, and 21 with lines. Again, fairly close, and just a few
-;; FPS higher than the previous test.
-;;
-;; Rendering is still the most expensive part. Even if the update
-;; function does _nothing_, rendering 437 blocks (textures) still
-;; takes the FPS down to about 24. (So the quadtree/colllision detection
-;; was only taking a few PFS) With only 219 blocks, we can get to
-;; about 43 FPS.
-;;
-;; NEXT STEP: a bitmap-dc% can be used to stage content for rendering,
-;; and then the whole bitmap-dc% can be plastered onto the actual dc%
-;; all at once: http://docs.racket-lang.org/draw/bitmap-dc_.html?q=
-;; I think this might help the FPS.
-;;
-;; Ok, so using a backbuffer bitmap-dc% does improve performance a bit.
-;; Rendering 437 block textures, with an empty update, takes us up to
-;; about 43 FPS, so that's about double what we were getting before.
-;;
-;; If I fill update back in, so we do the whole quadtree/collision logic,
-;; we can run at about 26 FPS with 437 blocks. So with the only change
-;; being the backbuffer, we went from 18 FPS, up to 26 FPS. So not huge,
-;; but better.
-;;
-;; I remember seeing different FPS when I use an external display.
-;;
-;; What if I convert everything to typed racket?
+;; This is a continuation of quadtree.rkt. Performance wasn't that great using
+;; Racket's native GUI drawing stuff, so I'm seeing what kind of performance we
+;; can get by using OpenGl pseudo-directly.
 
-(require racket/gui
-         racket/performance-hint
-         profile
-         ; profile/render-graphviz)
-         profile/render-text)
+(require racket/performance-hint
+         racket/gui
+         sgl/gl
+         sgl/gl-vectors)
 
 
-; (define NUM-BLOCKS 200)
 (define NUM-BLOCKS 437)
-(define RENDERING 'texture) ;; Should be 'texture 'lines or 'none
 
 (define BLOCK-SIZE 24)
-
-(define BLOCK-IMG (make-bitmap 1 1))
-(send BLOCK-IMG load-file "../img/block.png")
 
 (define GRID-WIDTH 23)
 (define GRID-HEIGHT 19)
@@ -74,17 +20,14 @@
 (define WINDOW-WIDTH (* GRID-WIDTH BLOCK-SIZE))
 (define WINDOW-HEIGHT (* GRID-HEIGHT BLOCK-SIZE))
 
-(define BACKBUFFER-IMG (make-bitmap WINDOW-WIDTH WINDOW-HEIGHT))
-(define BACKBUFFER (new bitmap-dc% [bitmap BACKBUFFER-IMG]))
-
-(define MS-PER-SECOND 1000)
-(define FRAME-SAMPLE-COUNT 30)
-
 (define MAX-OBJECTS 10)
 (define MAX-LEVELS 5)
 
 (define MIN-BLOCK-PIXELS-PER-SECOND (* 2 BLOCK-SIZE))
 (define MAX-BLOCK-PIXELS-PER-SECOND (* 10 BLOCK-SIZE))
+
+(define MS-PER-SECOND 1000)
+(define FRAME-SAMPLE-COUNT 30)
 
 (define frames '(0))
 (define delta 0)
@@ -104,11 +47,15 @@
                  (and (< min-x1 max-x2) (> max-x1 min-x2)
                       (< min-y1 max-y2) (> max-y1 min-y2))))
 
-(define (draw-bbox dc b)
-  (send dc draw-rectangle (bbox-x b) (bbox-y b) (bbox-width b) (bbox-height b)))
-
-(define (draw-block dc b)
-  (send dc draw-bitmap BLOCK-IMG (bbox-x b) (bbox-y b)))
+(define (draw-block b)
+  (glTexCoord2f 0 0)
+  (glVertex3f (bbox-x b) (bbox-y b) 0)
+  (glTexCoord2f 0 1)
+  (glVertex3f (bbox-x b) (+ (bbox-y b) BLOCK-SIZE) 0)
+  (glTexCoord2f 1 1)
+  (glVertex3f (+ (bbox-x b) BLOCK-SIZE) (+ (bbox-y b) BLOCK-SIZE) 0)
+  (glTexCoord2f 1 0)
+  (glVertex3f (+ (bbox-x b) BLOCK-SIZE) (bbox-y b) 0))
 
 ;; Quadtree Node Class
 (define quadtree%
@@ -145,14 +92,14 @@
                      (if (and (not (= -1 idx)) (not (empty? nodes)))
                          (append objects (send (list-ref nodes idx) get-candidates b))
                          objects)))
-    (define/public (draw dc)
-                   (send dc set-pen "black" 1 'solid)
-                   (send dc set-brush "white" 'transparent)
-                   (when (and (empty? nodes)
-                              (not (empty? objects)))
-                     (draw-bbox dc bounds))
-                   (for ([n (in-list nodes)])
-                     (send n draw dc)))
+    ; (define/public (draw dc)
+    ;                (send dc set-pen "black" 1 'solid)
+    ;                (send dc set-brush "white" 'transparent)
+    ;                (when (and (empty? nodes)
+    ;                           (not (empty? objects)))
+    ;                  (draw-bbox dc bounds))
+    ;                (for ([n (in-list nodes)])
+    ;                  (send n draw dc)))
 
     (define/private (split)
                     (let ([new-level (add1 current-level)]
@@ -198,7 +145,6 @@
           [(= 3 vel-direction) (set! y-vel vel)])
     (set! blocks (cons (block x y BLOCK-SIZE BLOCK-SIZE #f x-vel y-vel) blocks))))
 
-;; Updates the simulation
 (define (tick delta)
   (send my-quadtree clear)
   (for ([b (in-list blocks)])
@@ -227,48 +173,137 @@
         (when (intersect? b b2)
           (set-block-colliding! b #t)
           (set-block-colliding! b2 #t))))))
-  ; (void))
 
-(define (draw-framerate dc frames)
-  (when (> (length frames) 1)
-    (define start-ms (last frames))
-    (define end-ms (first frames))
-    (define span-in-seconds (/ (- end-ms start-ms) MS-PER-SECOND))
-    (define frames-per-second (/ (- (length frames) 1) span-in-seconds))
-    (send dc set-text-foreground "darkgreen")
-    (send dc set-brush "white" 'transparent)
-    (send dc draw-text (format "FPS: ~a" (truncate frames-per-second)) 10 10)))
-
-;; Draws the simulation
 (define (draw-world canvas dc)
-  (send BACKBUFFER clear)
-  (unless (eq? RENDERING 'none)
-    (when (eq? RENDERING 'lines) (send my-quadtree draw BACKBUFFER))
-    (if (eq? RENDERING 'lines)
-        (begin (send BACKBUFFER set-brush "white" 'transparent)
-               (for ([b (in-list blocks)])
-                 (send BACKBUFFER set-pen "blue" 1 'solid)
-                 (when (block-colliding b) (send BACKBUFFER set-pen "red" 1 'solid))
-                 (draw-bbox BACKBUFFER b)))
-        (begin (for ([b (in-list blocks)])
-                 (draw-block BACKBUFFER b)))))
-  (draw-framerate BACKBUFFER frames)
-  (send dc draw-bitmap BACKBUFFER-IMG 0 0))
+  (begin (for ([b (in-list blocks)])
+           (draw-block b))))
+; (draw-framerate BACKBUFFER frames)))
+
+;; OpenGL Functions
+(define (gl-init)
+  (let ((res BLOCK-TEXTURE))
+    (init-textures 1)
+    (unless (gl-load-texture (list-ref res 2) (list-ref res 0) (list-ref res 1)
+                             GL_NEAREST GL_NEAREST 0)
+      (error "Couldn't load texture"))
+
+    (glColor4d 1 1 1 1)
+    (glBlendFunc GL_SRC_ALPHA GL_ONE)
+
+    ;; Standard Init
+    (glEnable GL_TEXTURE_2D)
+    (glClearColor 1.0 1.0 1.0 1.0)
+    (glClearDepth 1)))
+
+(define (gl-resize width height)
+  (glViewport 0 0 width height)
+  (glMatrixMode GL_PROJECTION)
+  (glLoadIdentity)
+  (glOrtho 0.0 width height 0.0 -1.0 1.0)
+  (glMatrixMode GL_MODELVIEW)
+  (glLoadIdentity))
+
+(define *textures* '())
+
+(define (init-textures count)
+  (set! *textures* (glGenTextures count)))
+
+(define (bitmap->gl-vector bmp)
+  (let* (
+         (dc (instantiate bitmap-dc% (bmp)))
+         (pixels (* (send bmp get-width) (send bmp get-height)))
+         (vec (make-gl-ubyte-vector (* pixels 3)))
+         (data (make-bytes (* pixels 4)))
+         (i 0))
+    (send dc get-argb-pixels 0 0 (send bmp get-width) (send bmp get-height) data)
+    (letrec
+      ([loop
+        (lambda ()
+          (when (< i pixels)
+            (begin
+              (gl-vector-set! vec (* i  3)
+                              (bytes-ref data (+ (* i 4) 1)))
+              (gl-vector-set! vec (+ (* i 3) 1)
+                              (bytes-ref data (+ (* i 4) 2)))
+              (gl-vector-set! vec (+ (* i 3) 2)
+                              (bytes-ref data (+ (* i 4) 3)))
+              (set! i (+ i 1))
+              (loop))))])
+      (loop))
+    (send dc set-bitmap #f)
+    (list (send bmp get-width) (send bmp get-height) vec)))
+
+(define (image->gl-vector file)
+  (bitmap->gl-vector (make-object bitmap% file 'unknown #f)))
+
+(define (gl-load-texture image-vector width height min-filter mag-filter ix)
+  (glBindTexture GL_TEXTURE_2D (gl-vector-ref *textures* ix))
+  (glTexParameteri GL_TEXTURE_2D GL_TEXTURE_MIN_FILTER min-filter)
+  (glTexParameteri GL_TEXTURE_2D GL_TEXTURE_MAG_FILTER mag-filter)
+  (let* ((new-width 128)
+         (new-height 128)
+         (new-img-vec (make-gl-ubyte-vector (* new-width new-height 3))))
+    (gluScaleImage GL_RGB
+                   width height GL_UNSIGNED_BYTE image-vector
+                   new-width new-height GL_UNSIGNED_BYTE new-img-vec)
+    (if (or (= min-filter GL_LINEAR_MIPMAP_NEAREST)
+            (= mag-filter GL_LINEAR_MIPMAP_NEAREST))
+        (gluBuild2DMipmaps GL_TEXTURE_2D 3 new-width new-height GL_RGB GL_UNSIGNED_BYTE new-img-vec)
+        (glTexImage2D GL_TEXTURE_2D 0 3 new-width new-height 0 GL_RGB GL_UNSIGNED_BYTE new-img-vec))))
+
+(define (get-texture ix)
+  (gl-vector-ref *textures* ix))
+
+(define BLOCK-TEXTURE (image->gl-vector "/Users/drautb/GitHub/drautb/sketchbook/racket/quadtree/block.png"))
 
 ;; GUI stuff
 (define my-frame (new (class frame% (super-new)
                         (define/augment (on-close) (exit 0)))
-                      [label "Quadtree Demo"]
+                      [label "Quadtree - C Style OpenGL"]
                       [width WINDOW-WIDTH]
                       [height WINDOW-HEIGHT]
                       [min-width WINDOW-WIDTH]
                       [min-height WINDOW-HEIGHT]
                       [stretchable-width #f]
-                      [stretchable-height #f]
-                      [style '(fullscreen-button)]))
+                      [stretchable-height #f]))
 
-(define my-canvas (new canvas% [parent my-frame]
-                       [paint-callback draw-world]))
+(define my-gl-canvas
+  (new
+    (class canvas%
+      (inherit refresh
+               with-gl-context
+               swap-gl-buffers)
+      (define init? #f)
+      (define/override (on-paint)
+                       (with-gl-context
+                         (lambda ()
+                           (unless init?
+                             (gl-init)
+                             (set! init? #t))
+                           (define start-loop-time (current-milliseconds))
+                           (set! delta (/ (- start-loop-time (first frames)) MS-PER-SECOND))
+                           (tick delta)
+                           (set! frames (add-frame-time (current-milliseconds) frames))
+                           (gl-draw-world)
+                           (swap-gl-buffers)))
+                       (queue-callback (lambda () (refresh)) #f))
+      (define/override (on-size w h)
+                       (with-gl-context
+                         (lambda ()
+                           (gl-resize w h)))
+                       (refresh))
+      (super-new (style '(gl no-autoclear))))
+    [parent my-frame]
+    [paint-callback draw-world]))
+
+(define (gl-draw-world)
+  (glClear (+ GL_COLOR_BUFFER_BIT GL_DEPTH_BUFFER_BIT))
+  (glBindTexture GL_TEXTURE_2D (get-texture 0))
+  (glBegin GL_QUADS)
+  (for ([b (in-list blocks)])
+    (draw-block b))
+  (glEnd)
+  (glFlush))
 
 (define (add-frame-time current-time frames)
   (cons current-time (take frames (min FRAME-SAMPLE-COUNT (length frames)))))
@@ -279,25 +314,17 @@
   (tick delta)
   (set! frames (add-frame-time (current-milliseconds) frames))
 
-  (send my-canvas refresh-now)
+  (send my-gl-canvas refresh-now)
   (yield)
   (flush-output)
   (main-loop))
 
-(define (run-profiler [repetitions 1])
-  (profile-thunk (thunk (tick 0.001))
-                 #:repeat repetitions
-                 #:render render))
 
 (random-seed (current-seconds))
 
 (for ([n NUM-BLOCKS])
   (add-block))
 
-;; UNCOMMENT THESE TWO LINES TO RUN THE SIMULATION
+(send (send my-gl-canvas get-dc) get-gl-context)
 (send my-frame show #t)
-; (send my-frame fullscreen #t)
-(queue-callback main-loop #f)
 
-;; UNCOMMENT THIS LINE TO RUN THE PROFILER
-; (run-profiler 10000)
