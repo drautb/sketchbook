@@ -12,6 +12,7 @@
     }
   ],
   "SublimeLinter": {
+    "@python": 2.7,
     "linters": {
       "javac": {
         "working_directory": ".",
@@ -21,6 +22,10 @@
           "-Xlint",
           "-Xlint:-serial"
         ]
+      },
+      "pep8": {
+        "@disable": false,
+        "max-line-length": 120
       }
     }
   }
