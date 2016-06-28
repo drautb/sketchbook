@@ -7,6 +7,8 @@ defmodule Mix.Tasks.BuildHistory do
   @ectool "/opt/electriccloud/electriccommander/bin/ectool"
   @page_size 5000
 
+  @ec_history_cache "/tmp/ec-job-history.json"
+
   def run(args) do
     project_name = List.first(args)
 
@@ -58,7 +60,6 @@ defmodule Mix.Tasks.BuildHistory do
   end
 
   defp retrieve_project_history(project_name) do
-    login_to_ec
     ec_job_history = retrieve_ec_history
     filter_job_history(project_name, ec_job_history)
   end
@@ -70,13 +71,32 @@ defmodule Mix.Tasks.BuildHistory do
   end
 
   defp retrieve_ec_history do
+    refresh_cache
+
+    Poison.decode!(File.read!(@ec_history_cache))
+  end
+
+  defp refresh_cache do
+    case File.stat(@ec_history_cache, time: :posix) do
+      {:ok, stat_data} -> unless stat_data.mtime > :os.system_time(:seconds) - 4 * 3600 do
+          reload_data
+        end
+      _ -> reload_data
+    end
+  end
+
+  defp reload_data do
+    login_to_ec
+
     pages = Enum.map(0..20, fn(n) -> retrieve_ec_history_page(n) end)
-    List.foldr(pages, [], fn(x, y) ->
+    job_list = List.foldr(pages, [], fn(x, y) ->
       case x do
         nil -> y
         _ -> x ++ y
       end
     end)
+
+    File.write!(@ec_history_cache, Poison.encode!(job_list))
   end
 
   defp retrieve_ec_history_page(page_number) do
