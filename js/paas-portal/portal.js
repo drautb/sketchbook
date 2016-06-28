@@ -8,20 +8,20 @@ var casper = require('casper').create({
   logLevel: 'warning'
 });
 
-casper.start('https://dptservices.familysearch.org/portal');
-
 var username = casper.cli.get(0),
     password = casper.cli.get(1);
 
-casper.then(function() {
-  this.click('div#login-button a');
-});
+casper.start('https://ident.lds.org/sso/UI/Login?service=credentials');
 
 casper.thenEvaluate(function(username, password) {
   document.querySelector('input[name="IDToken1"]').setAttribute('value', username);
   document.querySelector('input[name="IDToken2"]').setAttribute('value', password);
   document.querySelector('form[name="Login"]').submit();
 }, username, password);
+
+casper.thenOpen('https://dptservices.familysearch.org/portal', function() {
+  this.click('div#login-button a');
+});
 
 var jSessionId = '';
 var fspSessionId = '';
