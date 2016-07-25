@@ -1,0 +1,2 @@
+#define imgui_sandbox_VERSION_MAJOR @imgui_sandbox_VERSION_MAJOR@
+#define imgui_sandbox_VERSION_MINOR @imgui_sandbox_VERSION_MINOR@
