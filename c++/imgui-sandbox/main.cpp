@@ -2,6 +2,8 @@
 #include "imgui/imgui-SFML.h"
 
 #include <SFML/Graphics/RenderWindow.hpp>
+#include <SFML/Graphics/Texture.hpp>
+#include <SFML/Graphics/Sprite.hpp>
 #include <SFML/System/Clock.hpp>
 #include <SFML/Window/Event.hpp>
 
@@ -10,6 +12,15 @@ int main()
     sf::RenderWindow window(sf::VideoMode(640, 480), "");
     window.setVerticalSyncEnabled(true);
     ImGui::SFML::Init(window);
+
+    sf::Texture texture;
+    if (!texture.loadFromFile("image.jpg"))
+    {
+    // error...
+    }
+
+    sf::Sprite sprite;
+    sprite.setTexture(texture);
 
     sf::Color bgColor;
 
@@ -56,12 +67,13 @@ int main()
         }
 
         // Demo
-        ImGui::ShowTestWindow();
+        // ImGui::ShowTestWindow();
 
         ImGui::End(); // end window
 
         window.clear(bgColor); // fill background with color
         ImGui::Render();
+        window.draw(sprite);
         window.display();
     }
 
