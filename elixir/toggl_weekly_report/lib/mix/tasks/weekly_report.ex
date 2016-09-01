@@ -31,7 +31,13 @@ defmodule Mix.Tasks.WeeklyReport do
   end
 
   defp summarize_report_data(weekly_report_data) do
-    week_total_ms = List.last(weekly_report_data["totals"])
+    {date, _} = :calendar.local_time
+    day_of_week = :calendar.day_of_the_week(date)
+
+    totals = Enum.slice(weekly_report_data["totals"], 7 - day_of_week, day_of_week)
+    totals = Enum.reject(totals, fn(x) -> x == nil end)
+
+    week_total_ms = Enum.sum(totals)
 
     %{total_hours: week_total_ms / @ms_per_hour}
   end
