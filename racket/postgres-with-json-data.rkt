@@ -9,7 +9,7 @@
 ;; SCHEMA
 ; (query-exec db-conn "DROP SCHEMA IF EXISTS dss CASCADE")
 ; (query-exec db-conn "CREATE SCHEMA dss")
-(query-exec db-conn "SET SCHEMA 'dss'")
+(query-exec db-conn "SET SCHEMA 'ds'")
 ; (query-exec db-conn "CREATE TABLE service (id SERIAL PRIMARY KEY, data JSONB)")
 ; (query-exec db-conn "CREATE INDEX idx_data on service USING GIN(data)")
 
@@ -65,7 +65,23 @@
               (string-append "INSERT INTO service(data, create_ts) VALUES('" service-def "', '2013-04-26 21:09:00.000000');")))
 
 ; (for ([i 1])
-(for ([i 5])
+; (for ([i 5])
 ; (for ([i 60000])
-; (for ([i 500000])
+(for ([i 1000000])
+  (insert-new-service (gen-service-def)))
+(displayln "Inserted 1st million...")
+
+(for ([i 1000000])
+  (insert-new-service (gen-service-def)))
+(displayln "Inserted 2nd million...")
+
+(for ([i 1000000])
+  (insert-new-service (gen-service-def)))
+(displayln "Inserted 3rd million...")
+
+(for ([i 1000000])
+  (insert-new-service (gen-service-def)))
+(displayln "Inserted 4th million...")
+
+(for ([i 1000000])
   (insert-new-service (gen-service-def)))

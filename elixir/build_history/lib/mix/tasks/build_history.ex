@@ -7,7 +7,7 @@ defmodule Mix.Tasks.BuildHistory do
   @ectool "/opt/electriccloud/electriccommander/bin/ectool"
   @page_size 5000
 
-  @ec_history_cache "/tmp/ec-job-history.json"
+  @ec_history_cache "/Users/drautb/GitHub/drautb/sketchbook/js/build-history-browser/ec-job-history.json"
 
   def run(args) do
     project_name = List.first(args)

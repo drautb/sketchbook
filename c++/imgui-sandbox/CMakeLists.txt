@@ -23,7 +23,7 @@ include_directories("${PROJECT_BINARY_DIR}")
 
 # Define sources and executable
 set(EXECUTABLE_NAME "imgui-sandbox")
-add_executable(${EXECUTABLE_NAME} main.cpp
+add_executable(${EXECUTABLE_NAME} MACOSX_BUNDLE main.cpp
                                   imgui/imgui-SFML.cpp
                                   imgui/imgui.cpp
                                   imgui/imgui_draw.cpp

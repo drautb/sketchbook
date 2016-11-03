@@ -14,7 +14,7 @@ int main()
     ImGui::SFML::Init(window);
 
     sf::Texture texture;
-    if (!texture.loadFromFile("image.jpg"))
+    if (!texture.loadFromFile("/Users/drautb/GitHub/sketchbook/c++/imgui-sandbox/image.jpg"))
     {
     // error...
     }
@@ -67,13 +67,13 @@ int main()
         }
 
         // Demo
-        // ImGui::ShowTestWindow();
+        ImGui::ShowTestWindow();
 
         ImGui::End(); // end window
 
         window.clear(bgColor); // fill background with color
-        ImGui::Render();
         window.draw(sprite);
+        ImGui::Render();
         window.display();
     }
 

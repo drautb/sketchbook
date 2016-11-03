@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include <aws/core/Aws.h>
+#include <aws/core/Region.h>
 #include <aws/cloudformation/CloudFormationClient.h>
 
 using namespace std;
@@ -13,6 +14,8 @@ int main()
   Aws::InitAPI(options);
 
   cout << "Attempting to create CloudFormationClient..." << endl;
+
+  cout << "REGION: " << Aws::RegionMapper::GetRegionName(Aws::Region[0]) << endl;
 
   CloudFormationClient client;
 

@@ -14,3 +14,12 @@ racket/sicp/**/*.html
 # For generated java files
 target/
 *.class
+
+# Generated CMake stuff
+CMakeFiles
+cmake_install.cmake
+CMakeCache.txt
+CPackConfig.cmake
+CPackSourceConfig.cmake
+Makefile
+build
