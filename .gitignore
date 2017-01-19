@@ -6,11 +6,17 @@ fs-eng/
 node_modules
 pp6-info.json
 spanish-highlands-3-info.json
+.splunk
+blueprint-names.txt
+*.jks
+imgui.ini
+c++/performance-sandbox
 
 # For generated files
 racket/sicp/**/*.css
 racket/sicp/**/*.js
 racket/sicp/**/*.html
+racket/**/compiled
 
 # For generated java files
 target/
@@ -24,3 +30,7 @@ CPackConfig.cmake
 CPackSourceConfig.cmake
 Makefile
 build
+
+# IDE files
+.vscode
+
