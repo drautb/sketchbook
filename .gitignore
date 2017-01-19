@@ -5,6 +5,7 @@
 fs-eng/
 node_modules
 pp6-info.json
+spanish-highlands-3-info.json
 
 # For generated files
 racket/sicp/**/*.css

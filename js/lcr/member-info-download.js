@@ -6,9 +6,9 @@
 
 var USERNAME = process.env.LDS_USER,
     PASSWORD = process.env.LDS_PASSWORD,
-    PP6_UNIT_ID = process.env.PP6_UNIT_ID,
+    UNIT_ID = process.env.SH3_UNIT_ID,
     SIGNIN_URL = 'https://signin.lds.org/login.html',
-    PP6_MEMBER_INFO_URL = 'https://www.lds.org/htvt/services/v1/' + PP6_UNIT_ID + '/members';
+    MEMBER_INFO_URL = 'https://www.lds.org/htvt/services/v1/' + UNIT_ID + '/members';
 
 
 var fs = require('fs'),
@@ -39,7 +39,7 @@ var downloadMemberData = function(authToken, callback) {
   console.log('Authenticated. Downloading member information...');
   request({
     method: 'GET',
-    url: PP6_MEMBER_INFO_URL,
+    url: MEMBER_INFO_URL,
     headers: {
       'Cookie': authToken,
       'Accept': 'application/json'
@@ -57,13 +57,13 @@ var downloadMemberData = function(authToken, callback) {
 getAuthToken(USERNAME, PASSWORD, function(authToken) {
   downloadMemberData(authToken, function(memberData) {
     console.log('Writing member information to file...');
-    fs.writeFile("pp6-info.json", memberData, function(error) {
+    fs.writeFile("spanish-highlands-3-info.json", memberData, function(error) {
       if (error) {
         console.error('An error occurred while writing the info file: ' + error);
         return;
       }
 
-      console.log('Member data has been saved to pp6-info.json');
+      console.log('Member data has been saved to spanish-highlands-3-info.json');
     });
   });
 });
