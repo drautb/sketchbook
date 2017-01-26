@@ -15,7 +15,7 @@ sleep 3
 ports=("8110" "8120" "8130" "8140")
 
 for port in "${ports[@]}"; do
-  racket echo-port.rkt -p "$port" &
+  racket echo.rkt -p "$port" &
 done
 
 haproxy -f haproxy.cfg

@@ -18,9 +18,16 @@
     (current-seconds)
     #"application/json; charset=utf-8"
     empty
-    (list (jsexpr->bytes (hash 'port (port))))))
+    (list
+      (jsexpr->bytes
+        (hash 'port (port)
+              'request-headers
+              (map (λ (h)
+                     (hash (string->symbol (bytes->string/utf-8 (header-field h)))
+                           (bytes->string/utf-8 (header-value h))))
+                   (request-headers/raw request)))))))
 
 (serve/servlet echo-port
                #:port (port)
-               #:servlet-path "/port"
+               #:servlet-path "/http"
                #:command-line? #t)
