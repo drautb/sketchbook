@@ -12,7 +12,7 @@ pkill haproxy || echo "No HAProxy processes running"
 sleep 3
 
 # Start echo port backends
-ports=("8110" "8120" "8130" "8140")
+ports=("8110" "8120" "8130" "8140" "8150")
 
 for port in "${ports[@]}"; do
   racket echo.rkt -p "$port" &
