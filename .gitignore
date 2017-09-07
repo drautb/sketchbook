@@ -2,12 +2,8 @@
 *~
 *#*
 *.sublime-workspace
-fs-eng/
 node_modules
-pp6-info.json
-spanish-highlands-3-info.json
 .splunk
-blueprint-names.txt
 *.jks
 imgui.ini
 c++/performance-sandbox
@@ -34,3 +30,9 @@ build
 # IDE files
 .vscode
 
+# Generate report files
+blueprint-names.txt
+results.out
+pp6-info.json
+spanish-highlands-3-info.json
+fs-eng/
