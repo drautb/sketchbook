@@ -1,0 +1,24 @@
+<script>
+var b1Replacement = '<a href="https://www.amazon.com/" target="_blank"><img src="http://www.niftybuttons.com/amazon/amazon-button2.png" alt="Amazon Button"></a>';
+var b2Replacement = '<a href="https://www.amazon.com/" target="_blank"><img src="http://www.niftybuttons.com/amazon/amazon-button2.png" alt="Amazon Button"></a>';
+var b3Replacement = '<a href="https://www.amazon.com/" target="_blank"><img src="http://www.niftybuttons.com/amazon/amazon-button2.png" alt="Amazon Button"></a>';
+
+var elems = document.getElementsByClassName("sqs-block-button-container--left");
+for (var idx = 0; idx < elems.length; idx++) {
+  var e = elems[idx];
+  var innerElements = e.getElementsByTagName("a");
+  if (innerElements.length === 1) {
+    switch (innerElements[0].innerHTML) {
+      case "Amazon #1":
+        e.innerHTML = b1Replacement;
+        break;
+      case "Amazon #2":
+        e.innerHTML = b2Replacement;
+        break;
+      case "Amazon #3":
+        e.innerHTML = b3Replacement;
+        break;
+    }
+  }
+}
+</script>
