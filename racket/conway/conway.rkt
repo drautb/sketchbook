@@ -211,7 +211,7 @@
   )
 
 (define (bit-world->image w #:label-neighbors [lbl? #f])
-  (define SCALE 20)
+  (define SCALE 5)
   (define BOX (square SCALE "solid" "black"))
   (match-define (bit-world rows cols current _) w)
   (for*/fold ([img (empty-scene (* SCALE cols) (* SCALE rows))])
@@ -265,6 +265,6 @@
      (tick seed))))
 
 (module+ visualizer
-  (big-bang (string->bit-world (port->string (open-input-file "glider.txt")))
+  (big-bang (string->bit-world (port->string (open-input-file "glider-gun.txt")))
             [on-tick tick]
             [on-draw bit-world->image]))
