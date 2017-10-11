@@ -99,13 +99,29 @@
     (unsafe-bytes-set! bwv 7 128)
     (check-eq? (bit-worldv-ref bwv 2 40 16 1) #t)))
 
-(define-inline (count-neighbors bwv rows cols x y)
+(define-inline (count-neighbors-unopt bwv rows cols x y)
   (define count 0)
   (for* ([ny (in-range (sub1 y) (+ 2 y))]
          [nx (in-range (sub1 x) (+ 2 x))])
     (unless (and (unsafe-fx= x nx) (unsafe-fx= y ny))
       (set! count (+ count (if (bit-worldv-ref bwv rows cols nx ny) 1 0)))))
   count)
+
+(define-syntax-rule (unsafe-between min x max)
+  (and (unsafe-fx<= min x)
+       (unsafe-fx< x max)))
+(define-inline (count-neighbors bwv rows cols x y)
+  (let ([cnt 0])
+    (for ([dy (in-range -1 +2)])
+      (let ([ny (unsafe-fx+ dy y)])
+        (when (unsafe-between 0 ny rows)
+          (for ([dx (in-range -1 +2)])
+            (unless (and (unsafe-fx= dx 0) (unsafe-fx= dy 0))
+              (let ([nx (unsafe-fx+ dx x)])
+                (when (and (unsafe-between 0 nx cols)
+                           (bit-worldv-ref bwv rows cols nx ny))
+                  (set! cnt (unsafe-fx+ 1 cnt)))))))))
+    cnt))
 
 (module+ test
   (let ([bwv (make-bytes 3)]
@@ -237,14 +253,17 @@
 
 (module+ benchmark
   ;; Jay's:
-  ;;      original: cpu time: 1843 real time: 1842 gc time: 36
-  ;; dishv-ref/set: cpu time: 1683 real time: 1682 gc time: 82
-  ;;     neighbors: cpu time:  530 real time:  531 gc time: 0
-
-  ;; Mine:
-  ;;      original: cpu time: 1655 real time: 1654 gc time: 2
-  ;; define-inline: cpu time: 1084 real time: 1083 gc time: 2
+  ;;            original: cpu time: 1843 real time: 1842 gc time: 36
+  ;;       dishv-ref/set: cpu time: 1683 real time: 1682 gc time: 82
+  ;;           neighbors: cpu time:  530 real time:  531 gc time: 0
   ;;
+  ;; Mine:
+  ;;            original: cpu time: 1655 real time: 1654 gc time: 2
+  ;;       define-inline: cpu time: 1084 real time: 1083 gc time: 2
+  ;; count-neighbors-opt: cpu time: 952 real time: 953 gc time: 1
+  ;;
+  ;; Interesting, using Jay's optimized version of count-neighbors doesn't give that much of
+  ;; an improvement. The extra computation for the bitpacking must taking the time now.
 
   (define seed-str
     "........................O...........
