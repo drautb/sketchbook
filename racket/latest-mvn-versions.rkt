@@ -6,7 +6,7 @@
          xml
          xml/path)
 
-(define HOST "mvn.fsglobal.net")
+(define HOST "nexus.a.fsglobal.net")
 (define COLUMN-WIDTH 40)
 
 (define APPROVED-REPO "approved")
@@ -17,6 +17,7 @@
 (define ARTIFACTS
   (list (artifact APPROVED-REPO PAAS-GROUP "paas-sps-context")
         (artifact APPROVED-REPO PAAS-GROUP "paas-sps-common")
+        (artifact APPROVED-REPO PAAS-GROUP "paas-aws-common")
         (artifact APPROVED-REPO PAAS-GROUP "paas-sps-rds-common")
         (artifact APPROVED-REPO PAAS-GROUP "paas-sps-sas-utility")
         (artifact APPROVED-REPO PAAS-GROUP "paas-sps-common-test")
@@ -59,5 +60,3 @@
       (printf format-str (artifact-id a) (fetch-latest-artifact-version a)))))
 
 (show-latest-version-for-artifacts ARTIFACTS)
-
-
