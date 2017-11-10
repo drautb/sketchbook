@@ -5,4 +5,8 @@
 
 set -eux
 
-find . -type d -maxdepth 1 -exec sh -c '(cd {} && git config user.email drautb@familysearch.org)' ';'
+for d in $(find . -maxdepth 1 -type d); do
+    if [ "$d" != "." ]; then
+        cd "$d" && git config user.email drautb@familysearch.org && cd -
+    fi
+done
