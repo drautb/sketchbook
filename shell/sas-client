@@ -1,0 +1,22 @@
+#!/bin/bash
+
+ARTIFACT_ID="sas-client"
+VERSION="2.2.b270"
+DOWNLOADED_JAR="$ARTIFACT_ID-$VERSION.jar"
+
+if [ ! -e "$HOME/.m2/repository/org/familysearch/sas/$ARTIFACT_ID/$VERSION/$DOWNLOADED_JAR" ]
+  then
+# The sas-client jar needs to be manually installed for this to work.
+# 1. Download the jar manually from Nexus
+    curl --silent -o "$HOME/Downloads/$DOWNLOADED_JAR" "http://nexus.a.fsglobal.net/service/local/repositories/approved/content/org/familysearch/sas/$ARTIFACT_ID/$VERSION/$DOWNLOADED_JAR"
+
+# 2. Execute this command to install it to the local repo:
+    mvn org.apache.maven.plugins:maven-install-plugin:2.5.2:install-file -DgroupId=org.familysearch.sas -DartifactId=$ARTIFACT_ID -Dversion=$VERSION -Dfile="$HOME/Downloads/$DOWNLOADED_JAR"
+fi
+
+for i in "$(ls $HOME/.m2/repository/org/familysearch/sas/$ARTIFACT_ID/$VERSION/$DOWNLOADED_JAR)"; do
+  CPLIB=$CPLIB:$i
+done
+
+MAIN=org.familysearch.sas.client.Client
+java -Xmx1280M -cp $CPLIB $MAIN $1 $2 $3 $4 $5 $6 $7 $8 $9
