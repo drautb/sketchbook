@@ -86,6 +86,7 @@ puts "Unique services involved:   #{total_services.size}"
 puts "\n\nChecking Deployed Services..."
 
 missing = {}
+missing_list = []
 found = 0
 total_services.each do |s|
   bp, sys, srv = s
@@ -110,6 +111,7 @@ total_services.each do |s|
     missing[bp] = {} if missing[bp].nil?
     missing[bp][sys] = [] if missing[bp][sys].nil?
     missing[bp][sys].push(srv)
+    missing_list.push("#{bp} #{sys} #{srv}")
   else
     puts res
     puts res.body
@@ -128,6 +130,11 @@ missing.each do |bp, systems|
       puts "    #{s}"
     end
   end
+end
+
+puts "\nMISSING LIST:"
+missing_list.each do |n|
+  puts n
 end
 
 puts "\nBlueprints: #{missing.size}"
