@@ -17,6 +17,7 @@ require 'net/http'
 $refs = {}
 
 def ensure_entry_exists(blueprint, system, service)
+  return if blueprint =~ /.*-testapp/
   $refs[blueprint] = {} if $refs[blueprint].nil?
   $refs[blueprint][system] = {} if $refs[blueprint][system].nil?
   if $refs[blueprint][system][service].nil?
@@ -25,6 +26,7 @@ def ensure_entry_exists(blueprint, system, service)
 end
 
 def update_references(bp, sys, srv, ref_name)
+  return if bp =~ /.*-testapp/
   ref_name = ref_name.sub("URI://", "")
   ref_bp, ref_sys, ref_srv = ref_name.split("/")
 
@@ -66,9 +68,9 @@ Dir["fs-eng/*.yml"].each do |blueprint_filename|
   end
 end
 
-# File.open("references.json", "w") do |f|
-#   f.write(JSON.dump($refs))
-# end
+File.open("references.json", "w") do |f|
+  f.write(JSON.dump($refs))
+end
 
 puts "Unique blueprints involved: #{$refs.size}"
 
