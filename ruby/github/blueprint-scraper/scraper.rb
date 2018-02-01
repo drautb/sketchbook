@@ -17,6 +17,11 @@ module BlueprintScraper
     def scrape_blueprints
       puts "Starting blueprint scraper..."
 
+      time_start = Time.now
+
+      puts "Removing all existing blueprints in #{FAMILY_SEARCH_ORGANIZATION} directory..."
+      FileUtils.rm_rf(FAMILY_SEARCH_ORGANIZATION)
+
       @repo_list = fetch_repositories
       puts "Found #{@repo_list.length} repositories in #{FAMILY_SEARCH_ORGANIZATION}."
 
@@ -25,7 +30,9 @@ module BlueprintScraper
         scrape_blueprint(repo[:full_name])
       end
 
-      puts "Done."
+      time_end = Time.now
+
+      puts "Done. Finished in #{time_end - time_start} seconds."
     end
 
     def list_repositories
