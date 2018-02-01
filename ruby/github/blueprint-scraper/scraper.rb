@@ -1,6 +1,13 @@
 require "base64"
 require "fileutils"
 require "octokit"
+require "etc"
+require "concurrent"
+
+def print_and_flush(str)
+  print str
+  $stdout.flush
+end
 
 module BlueprintScraper
   class Scraper
@@ -17,22 +24,32 @@ module BlueprintScraper
     def scrape_blueprints
       puts "Starting blueprint scraper..."
 
+      puts "Removing all existing blueprints in #{FAMILY_SEARCH_ORGANIZATION} directory."
+      FileUtils.rm_rf(FAMILY_SEARCH_ORGANIZATION)
+      FileUtils.mkdir_p(FAMILY_SEARCH_ORGANIZATION)
+
+      puts "Listing all repositories in #{FAMILY_SEARCH_ORGANIZATION}."
+      time_start = Time.now
+      @repo_list = fetch_repositories
+      puts "Found #{@repo_list.length} repositories in #{FAMILY_SEARCH_ORGANIZATION}. Time: #{Time.now - time_start} seconds."
+
       time_start = Time.now
 
-      puts "Removing all existing blueprints in #{FAMILY_SEARCH_ORGANIZATION} directory..."
-      FileUtils.rm_rf(FAMILY_SEARCH_ORGANIZATION)
+      cpu_count = Etc.nprocessors
+      thread_pool = Concurrent::FixedThreadPool.new(cpu_count)
 
-      @repo_list = fetch_repositories
-      puts "Found #{@repo_list.length} repositories in #{FAMILY_SEARCH_ORGANIZATION}."
-
-      FileUtils.mkdir_p(FAMILY_SEARCH_ORGANIZATION)
       @repo_list.each do |repo|
-        scrape_blueprint(repo[:full_name])
+        thread_pool << Proc.new { scrape_blueprint(repo[:full_name]) }
       end
+
+      sleep 3 while thread_pool.queue_length > 0
 
       time_end = Time.now
 
-      puts "Done. Finished in #{time_end - time_start} seconds."
+      thread_pool.shutdown
+      thread_pool.wait_for_termination 3
+
+      puts "\nDone. Finished in #{time_end - time_start} seconds."
     end
 
     def list_repositories
@@ -57,18 +74,19 @@ module BlueprintScraper
     end
 
     def scrape_blueprint(repo_full_name)
-      puts "Scraping #{BLUEPRINT_FILE} from #{repo_full_name}."
+      # puts "Scraping #{BLUEPRINT_FILE} from #{repo_full_name}."
       filename = "#{repo_full_name}-#{BLUEPRINT_FILE}"
       begin
         file_metadata = @github_client.content(repo_full_name, :path => BLUEPRINT_FILE)
         content = Base64.decode64(file_metadata[:content])
         File.open(filename, "w") do |f|
-          puts "Writing #{filename}."
+          # puts "Writing #{filename}."
           f.write(content)
         end
-      rescue Octokit::NotFound => e
-        puts "\t#{BLUEPRINT_FILE} not found in #{filename}."
+      rescue Octokit::NotFound => _
+        # puts "\t#{BLUEPRINT_FILE} not found in #{filename}."
       end
+      print_and_flush "."
     end
 
     def login
