@@ -14,7 +14,7 @@
     (if match-result
         (string-append "\tserver-template "
                        "srv"
-                       " 20 "
+                       " 10 "
                        last-hostname
                        " "
                        (third match-result))
