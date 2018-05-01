@@ -1,13 +1,20 @@
 #lang racket
 
 (require json
-         net/http-client)
+         net/http-client
+         racket/async-channel)
 
 (define SESSION-ID (getenv "FSSESSIONID"))
 (define DTM-CFG-HOST (getenv "DTM_CFG_HOST"))
 (define FLEETS-PATH "/fleets")
 
 (define ACCEPTED "HTTP/1.1 202 Accepted")
+
+(define FLEET-NAME-PREFIX "drautb-test-")
+
+(define THREAD-POOL-SIZE 50)
+
+(define FLEET-CHANNEL (make-async-channel))
 
 (define (build-headers)
   (list (string->bytes/utf-8 (string-append "Authorization: Bearer " SESSION-ID))
@@ -32,21 +39,27 @@
   (jsexpr->bytes data))
 
 (define (put-fleet fleet-name)
+  (printf "[~a] PUT~n" fleet-name)
   (let-values ([(status-code headers in-port)
                 (http-sendrecv DTM-CFG-HOST
                                (string-append FLEETS-PATH "/" fleet-name)
                                #:method #"PUT"
                                #:headers (build-headers)
                                #:data (build-fleet-request-body fleet-name))])
-    (bytes->string/utf-8 status-code)))
+    (define status-str (bytes->string/utf-8 status-code))
+    (unless (equal? status-str ACCEPTED)
+      (error "Failed to PUT fleet. fleetName='~a' response='~a'" fleet-name status-str))))
 
 (define (delete-fleet fleet-name)
+  (printf "[~a] DELETE~n" fleet-name)
   (let-values ([(status-code headers in-port)
                 (http-sendrecv DTM-CFG-HOST
                                (string-append FLEETS-PATH "/" fleet-name)
                                #:method #"DELETE"
                                #:headers (build-headers))])
-    (bytes->string/utf-8 status-code)))
+    (define status-str (bytes->string/utf-8 status-code))
+    (unless (equal? status-str ACCEPTED)
+      (error "Failed to DELETE fleet. fleetName='~a' response='~a'" fleet-name status-str))))
 
 (define (get-fleet-status fleet-name)
   (let-values ([(status-code headers in-port)
@@ -56,76 +69,68 @@
                                #:headers (build-headers))])
     (hash-ref (read-json in-port) 'state)))
 
-(define (make-dtm-worker fleet-name)
+(define (wait-for-ready fleet-name)
+  (define status (get-fleet-status fleet-name))
+  (cond [(equal? status "UNDER_PROCESS")
+         (begin
+           (printf "[~a] STILL UNDER_PROCESS~n" fleet-name)
+           (sleep 5)
+           (wait-for-ready fleet-name))]
+        [(equal? status "READY")
+         (printf "[~a] READY~n" fleet-name)]
+        [else
+         (printf "[~a] FAILED: '~a'~n" fleet-name status)]))
+
+(define (wait-for-not-found fleet-name)
+  (define status (get-fleet-status fleet-name))
+  (cond [(equal? status "UNDER_PROCESS")
+         (begin
+           (printf "[~a] STILL UNDER_PROCESS~n" fleet-name)
+           (sleep 5)
+           (wait-for-not-found fleet-name))]
+        [(equal? status "FLEET_NOT_FOUND")
+         (printf "[~a] FLEET_NOT_FOUND~n" fleet-name)]
+        [else
+         (printf "[~a] FAILED: '~a'~n" fleet-name status)]))
+
+
+(define (make-dtm-worker action-fn wait-fn)
   (thread
    (lambda ()
-     (define log
-       (lambda args
-         (apply printf 
-                (string-append "[~a] " (first args) "~n")
-                (cons fleet-name (rest args)))))
-     (define (wait-for-ready)
-       (define status (get-fleet-status fleet-name))
-       (cond [(equal? status "UNDER_PROCESS")
-              (begin 
-                (log "STILL UNDER_PROCESS")
-                (sleep 5)
-                (wait-for-ready))]
-             [(equal? status "READY")
-              (log "READY")]
-             [else 
-              (log "FAILED: '~a'" status)]))
-     (log "PUT")
-     (define put-result (put-fleet fleet-name))
-     (if (equal? put-result ACCEPTED)
-         (begin
-           (log "ACCEPTED")
-           (wait-for-ready))
-         (log "Fleet was NOT accepted! '~a'" put-result)))))
+     (define (loop)
+       (define fleet-name (async-channel-try-get FLEET-CHANNEL))
+       (when fleet-name
+         (action-fn fleet-name)
+         (wait-fn fleet-name)
+         (loop)))
+     (loop))))
 
-(define (make-delete-worker fleet-name)
-  (thread 
-   (lambda ()
-     (define log
-       (lambda args
-         (apply printf 
-                (string-append "[~a] " (first args) "~n")
-                (cons fleet-name (rest args)))))
-     (define (wait-for-not-found)
-       (define status (get-fleet-status fleet-name))
-       (cond [(equal? status "UNDER_PROCESS")
-              (begin 
-                (log "STILL UNDER_PROCESS")
-                (sleep 5)
-                (wait-for-not-found))]
-             [(equal? status "FLEET_NOT_FOUND")
-              (log "FLEET_NOT_FOUND")]
-             [else 
-              (log "FAILED: '~a'" status)]))
-     (log "DELETE")
-     (define delete-result (delete-fleet fleet-name))
-     (if (equal? delete-result ACCEPTED)
-         (begin
-           (log "ACCEPTED")
-           (wait-for-not-found))
-         (log "Delete was NOT accepted! '~a'" delete-result)))))
+(define (make-fleet-name idx)
+  (string-append FLEET-NAME-PREFIX (number->string idx)))
 
+(define (make-fleet-list fleet-count)
+  (for/list ([n fleet-count])
+    (make-fleet-name n)))
 
 ;; ---------------------------------------------------------------------
-(define fleet-count 150)
+(define (delete-worker-factory)
+  (make-dtm-worker delete-fleet wait-for-not-found))
 
-(define (delete-fleets)
+(define (put-worker-factory)
+  (make-dtm-worker put-fleet wait-for-ready))
+
+(define (execute-pool fleet-count worker-factory-fn)
+  (define fleet-list (make-fleet-list fleet-count))
+  (for ([fleet fleet-list])
+    (async-channel-put FLEET-CHANNEL fleet))
   (define threads
-    (for/list ([n fleet-count])
-      (make-delete-worker (string-append "drautb-test-" (number->string n)))))
+    (for/list ([n THREAD-POOL-SIZE])
+      (worker-factory-fn)))
   (for ([t threads])
     (thread-wait t)))
 
-(define (create-fleets)
-  (define threads 
-    (for/list ([n fleet-count])
-      (make-dtm-worker (string-append "drautb-test-" (number->string n)))))
-  (for ([t threads])
-    (thread-wait t)))
+(define (delete-fleets fleet-count)
+  (execute-pool fleet-count delete-worker-factory))
 
-
+(define (put-fleets fleet-count)
+  (execute-pool fleet-count put-worker-factory))
