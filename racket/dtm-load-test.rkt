@@ -6,6 +6,7 @@
 
 (define SESSION-ID (getenv "FSSESSIONID"))
 (define DTM-CFG-HOST (getenv "DTM_CFG_HOST"))
+(define DTM-CFG-PORT (string->number (getenv "DTM_CFG_PORT")))
 (define FLEETS-PATH "/fleets")
 
 (define ACCEPTED "HTTP/1.1 202 Accepted")
@@ -43,6 +44,7 @@
   (let-values ([(status-code headers in-port)
                 (http-sendrecv DTM-CFG-HOST
                                (string-append FLEETS-PATH "/" fleet-name)
+                               #:port DTM-CFG-PORT
                                #:method #"PUT"
                                #:headers (build-headers)
                                #:data (build-fleet-request-body fleet-name))])
@@ -55,6 +57,7 @@
   (let-values ([(status-code headers in-port)
                 (http-sendrecv DTM-CFG-HOST
                                (string-append FLEETS-PATH "/" fleet-name)
+                               #:port DTM-CFG-PORT
                                #:method #"DELETE"
                                #:headers (build-headers))])
     (define status-str (bytes->string/utf-8 status-code))
@@ -65,6 +68,7 @@
   (let-values ([(status-code headers in-port)
                 (http-sendrecv DTM-CFG-HOST
                                (string-append FLEETS-PATH "/" fleet-name)
+                               #:port DTM-CFG-PORT
                                #:method #"GET"
                                #:headers (build-headers))])
     (hash-ref (read-json in-port) 'state)))
