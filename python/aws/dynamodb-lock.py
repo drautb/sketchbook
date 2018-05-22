@@ -132,7 +132,7 @@ class StressTest(threading.Thread):
 
             # BEGIN CRITICAL SECTION
             counter += 1
-            if counter % 300 == 0:
+            if counter % 1000 == 0:
                 print "Counter Progress: %d" % counter
 
             if random.randint(1, 1000) == 42:
