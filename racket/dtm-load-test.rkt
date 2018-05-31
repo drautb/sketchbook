@@ -9,11 +9,12 @@
 (define DTM-CFG-PORT (string->number (getenv "DTM_CFG_PORT")))
 (define FLEETS-PATH "/fleets")
 
+(define OK "HTTP/1.1 200 OK")
 (define ACCEPTED "HTTP/1.1 202 Accepted")
 
 (define FLEET-NAME-PREFIX "drautb-test-")
 
-(define THREAD-POOL-SIZE 50)
+(define THREAD-POOL-SIZE 30)
 
 (define FLEET-CHANNEL (make-async-channel))
 
@@ -71,7 +72,10 @@
                                #:port DTM-CFG-PORT
                                #:method #"GET"
                                #:headers (build-headers))])
-    (hash-ref (read-json in-port) 'state)))
+    (define status-str (bytes->string/utf-8 status-code))
+    (if (equal? status-str OK)
+        (hash-ref (read-json in-port) 'state)
+        ("UNDER_PROCESS")))) ; Pretend it's still under process if the backend goes down for a minute.
 
 (define (wait-for-ready fleet-name)
   (define status (get-fleet-status fleet-name))
