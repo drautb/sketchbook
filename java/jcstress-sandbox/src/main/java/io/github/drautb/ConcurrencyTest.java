@@ -5,7 +5,7 @@ import org.openjdk.jcstress.infra.results.IntResult2;
 
 // See jcstress-samples or existing tests for API introduction and testing guidelines
 
-@JCStressTest
+//@JCStressTest
 // Outline the outcomes here. The default outcome is provided, you need to remove it:
 @Outcome(id = "0, 0", expect = Expect.ACCEPTABLE, desc = "Default outcome.")
 @State

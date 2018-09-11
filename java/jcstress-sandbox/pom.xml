@@ -10,12 +10,13 @@
   <name>JCStress Sandbox</name>
 
   <prerequisites>
-    <maven>3.0</maven>  
+    <maven>3.0</maven>
   </prerequisites>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <jcstress.version>0.1.1</jcstress.version>
+    <snakeyaml.version>1.19</snakeyaml.version>
     <javac.target>1.8</javac.target>
     <uberjar.name>jcstress-sandbox</uberjar.name>
   </properties>
@@ -25,6 +26,11 @@
       <groupId>org.openjdk.jcstress</groupId>
       <artifactId>jcstress-core</artifactId>
       <version>${jcstress.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.yaml</groupId>
+      <artifactId>snakeyaml</artifactId>
+      <version>${snakeyaml.version}</version>
     </dependency>
   </dependencies>
 
