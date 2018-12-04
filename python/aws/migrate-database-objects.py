@@ -32,13 +32,25 @@ for obj in s3.list_objects(Bucket=bucket_name, MaxKeys=1000)['Contents']:
 
     try:
         s3.head_object(Bucket=bucket_name, Key=new_key)
-        print("KEY ALREADY EXISTS: " + new_key)
-        continue
+        raise ValueError("KEY ALREADY EXISTS: " + new_key)
     except ClientError:
         # Not found
         pass
 
     print(key + "  ==>  " + new_key)
+    copy_result = s3.copy_object(
+        CopySource={
+            'Bucket': bucket_name,
+            'Key': key
+        },
+        CopySourceIfMatch=obj['ETag'],
+        Bucket=bucket_name,
+        Key=new_key,
+        MetadataDirective='COPY',
+        TaggingDirective='COPY')
 
-    # TODO: Copy to new key, delete old key.
-
+    if copy_result['CopyObjectResult']['ETag'] == obj['ETag']:
+        print("Deleting old key: " + key)
+        s3.delete_object(Bucket=bucket_name, Key=key)
+    else:
+        raise ValueError("COPY FAILED! " + str(copy_result))
