@@ -3,9 +3,62 @@
 import base64
 import boto3
 import json
+import multiprocessing
 import sys
 
-client = boto3.client('stepfunctions')
+from threading import Thread
+from botocore.config import Config
+
+if len(sys.argv) != 3:
+    print "Usage: describe-config-update.py <state machine arn> <irq id>"
+    exit(1)
+
+config = Config(
+    retries = dict(
+        max_attempts = 10
+    )
+)
+client = boto3.client('stepfunctions', config=config)
+
+execution_arns = []
+target_arns = []
+
+def check_irq():
+    while len(execution_arns) != 0 and len(target_arns) == 0:
+        sys.stdout.write(".")
+        sys.stdout.flush()
+
+        arn = execution_arns.pop()
+        history = client.get_execution_history(executionArn=arn)
+        irq = json.loads(history['events'][0]['executionStartedEventDetails']['input'])['irqIds'][0]
+
+        if irq == int(sys.argv[2]):
+            target_arns.append(arn)
+
+next_token = None
+while len(target_arns) == 0:
+    if next_token != None:
+        executions = client.list_executions(stateMachineArn=sys.argv[1], maxResults=50, nextToken=next_token)
+    else:
+        executions = client.list_executions(stateMachineArn=sys.argv[1], maxResults=50)
+
+    for e in executions['executions']:
+        execution_arns.append(e['executionArn'])
+
+    threads = []
+    for _ in range(multiprocessing.cpu_count()):
+        t = Thread(target=check_irq)
+        t.start()
+        threads.append(t)
+
+    for t in threads:
+        t.join()
+
+    if len(target_arns) == 0:
+        next_token == executions['nextToken']
+
+print "\nFound target ARN(s) for IRQ " + sys.argv[2] + ": " + str(target_arns)
+exit(0)
 
 execution_history = client.get_execution_history(
     executionArn=sys.argv[1],
