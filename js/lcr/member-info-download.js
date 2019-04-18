@@ -8,7 +8,7 @@ var USERNAME = process.env.LDS_USER,
     PASSWORD = process.env.LDS_PASSWORD,
     UNIT_ID = process.env.SH3_UNIT_ID,
     SIGNIN_URL = 'https://signin.lds.org/login.html',
-    MEMBER_INFO_URL = 'https://www.lds.org/htvt/services/v1/' + UNIT_ID + '/members';
+    MEMBER_INFO_URL = 'https://www.lds.org/directory/services/web/v3.0/mem/member-list/' + UNIT_ID;
 
 
 var fs = require('fs'),
