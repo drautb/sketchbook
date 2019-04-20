@@ -15,14 +15,13 @@
                         [parent main-panel]
                         [label "Login Information"]))
 
-(define username-field (new text-field%
-                            [label "Username"]
+(define da-token-field (new text-field%
+                            [label "Token"]
                             [parent left-panel]))
 
-(define password-field (new text-field%
-                            [label "Password"]
-                            [parent left-panel]
-                            [style '(single password)]))
+(define unit-id-field (new text-field%
+                           [label "Unit ID"]
+                           [parent left-panel]))
 
 (define download-bt (new button%
                          [parent left-panel]
@@ -46,33 +45,13 @@
                           [callback (lambda (button event)
                                       (save-csv (send info-table get-value)))]))
 
-(define progress (new gauge%
-                      [label #f]
-                      [parent left-panel]
-                      [range 100]))
-
 
 (define (download-directory)
-  (log-info "Downloading directory...")
   (send frame enable #f)
-  (define login-cookie (login (send username-field get-value)
-                              (send password-field get-value)))
-  (log-info (format "Received login cookie: ~a" login-cookie))
-  (define unit-id (get-unit-id login-cookie))
-  (log-info (format "Received unit id: ~a" unit-id))
-  (define household-ids (get-household-ids login-cookie unit-id))
-  (log-info (format "Received ~a household ids" (length household-ids)))
-  (send progress set-range (length household-ids))
-  (define household-infos
-    (map (lambda (id)
-           (send progress set-value (+ 1 (send progress get-value)))
-           (define info (get-household-info login-cookie id))
-           ; (log-info (format "~a" info))
-           info)
-         household-ids))
-  (define csv-str (build-csv household-infos))
+  (define household-info (get-household-info (send da-token-field get-value)
+                                             (send unit-id-field get-value)))
+  (define csv-str (build-csv household-info))
   (send info-table set-value csv-str)
-  ; (send wait-dialog show #f)
   (send frame enable #t))
 
 

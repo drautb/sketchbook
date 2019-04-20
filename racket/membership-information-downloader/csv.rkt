@@ -5,26 +5,22 @@
 (provide build-csv)
 
 
-(define HEADER "\"Couple Name\" \"Address 1\" \"Address 2\" \"City\" \"State\" \"Postal\" \"Country\"")
+(define HEADER "\"Name\" \"Line 1\" \"Line 2\"")
 
 
-(define (build-csv household-infos)
+(define (build-csv household-info)
   (define lines
-    (map build-line (remove eof household-infos)))
+    (map build-line (remove eof household-info)))
   (string-join (append (list HEADER) lines) "\n"))
 
 
 (define (build-line info)
-  (define address (hash-ref (hash-ref info 'householdInfo) 'address))
-  (when (eq? address 'null) (set! address (make-hash)))
+  (define address (hash-ref info 'address (make-hash)))
   (string-join
-    (list (escape-result (hash-ref info 'coupleName ""))
-          (escape-result (hash-ref address 'addr1 ""))
-          (escape-result (hash-ref address 'addr2 ""))
-          (escape-result (hash-ref address 'city ""))
-          (escape-result (hash-ref address 'state ""))
-          (escape-result (hash-ref address 'postal ""))
-          (escape-result (hash-ref address 'countryIsoAlphaCode "")))))
+    (list (escape-result (hash-ref info 'name ""))
+          (escape-result (hash-ref address 'line1 ""))
+          (escape-result (hash-ref address 'line2 "")))))
+
 
 (define (escape-result str)
   (format "\"~a\"" str))
