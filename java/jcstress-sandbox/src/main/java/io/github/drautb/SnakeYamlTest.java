@@ -7,7 +7,7 @@ import org.yaml.snakeyaml.Yaml;
 /**
  * @author drautb
  */
-@JCStressTest
+//@JCStressTest
 @Outcome(id = "0", expect = Expect.ACCEPTABLE, desc = "Default outcome, no errors.")
 @State
 public class SnakeYamlTest {
