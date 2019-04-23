@@ -10,19 +10,23 @@ Dir["fs-eng/*.yml"].each do |blueprint_filename|
   input_yml = input_file.read
   input_file.close
 
-  blueprint = YAML::load(input_yml)
-  next if blueprint['version'] == 0.3
+  begin
+    blueprint = YAML::load(input_yml)
+    next if blueprint['version'] == 0.3
 
-  blueprint_name = blueprint['name']
-  next if blueprint['deploy'].nil?
+    blueprint_name = blueprint['name']
+    next if blueprint['deploy'].nil?
 
-  systems = blueprint['deploy']
-  systems.each do |system_name, services|
-    services.each do |service_name, service_def|
-      if service_def.has_key? 'routing'
-        $services.push([blueprint_name, system_name, service_name])
+    systems = blueprint['deploy']
+    systems.each do |system_name, services|
+      services.each do |service_name, service_def|
+        if service_def.has_key? 'routing'
+          $services.push([blueprint_name, system_name, service_name])
+        end
       end
     end
+  rescue
+    # Don't care
   end
 end
 
