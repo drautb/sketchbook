@@ -16,9 +16,14 @@ module BlueprintScraper
     BLUEPRINT_FILE = "blueprint.yml"
 
     def initialize
-      @github_client = Octokit::Client.new
+      if ENV['GITHUB_TOKEN'].nil?
+        @github_client = Octokit::Client.new
+        login
+      else
+        @github_client = Octokit::Client.new(:access_token => ENV['GITHUB_TOKEN'])
+      end
+
       @github_client.auto_paginate = true
-      login
     end
 
     def scrape_blueprints
