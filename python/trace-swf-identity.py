@@ -21,6 +21,13 @@ prod_prod_envs = {
   '10.36.78.254': '605-87dc435a40cdbe38688f9652efaa'
 }
 
+# IPs for dev SysPS during testing
+dev_envs = {
+  '10.36.234.186': '604-077746eb4b1a93aa0ba015b7543f',
+  '10.36.225.16': '608-22ee89cc472694db629356ca56ec',
+  '10.36.225.10': '609-9840b36348409c00a7a9cacd744e (No Metrics)'
+}
+
 
 IP_MAP = prod_prod_envs
 swf_client = boto3.client('swf')
