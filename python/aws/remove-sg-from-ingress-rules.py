@@ -12,8 +12,9 @@ parser.add_argument('security_group_id', help='The id of the EC2 security group 
 parser.add_argument('--region', default="us-east-1", help='The region in which to act')
 parser.add_argument('--proto', default='tcp', help='The protocol of the ingress rule to remove')
 parser.add_argument('--port', default=1836, help='The port of the ingress rule to remove')
-parser.add_argument('--dry-run', default=True,
-                    help='Print actions that would be taken without actually modifying any security groups')
+parser.add_argument('--dry-run', dest='dry_run', action='store_true')
+parser.add_argument('--no-dry-run', dest='dry_run', action='store_false')
+parser.set_defaults(dry_run=True)
 
 args = parser.parse_args()
 os.environ['AWS_DEFAULT_REGION'] = args.region
@@ -42,6 +43,10 @@ print("Found {} security groups with inbound rules from {}".format(len(sgs), tar
 ec2_resource = boto3.resource('ec2')
 for sg in sgs:
   sg_id = sg['GroupId']
+
+  if sg_id == target_sg_id:
+    continue
+
   if args.dry_run:
     print("[DRY RUN] Removing ingress rule from SG: {}".format(sg_id))
   else:
