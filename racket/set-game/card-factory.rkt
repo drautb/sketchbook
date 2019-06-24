@@ -1,15 +1,61 @@
-#lang racket
+#lang racket/base
 
 (require racket/draw
-         metapict)
+         racket/class
+         metapict
+         "interval-mapping.rkt")
 
-(provide get-shape-pict)
+(provide get-card)
+
+;; Tunable Bits
+(define CARD-WIDTH 200)
+(define CARD-HEIGHT 120)
+(define CARD-COLOR "white")
+(define SHAPE-PADDING 10)
+
+;; Retrieves the pict for a single card based on input.
+(define (get-card card)
+  (vector-ref cards card))
 
 (define (get-shape-pict color-idx shade-idx shape-idx)
   (vector-ref shapes (compute-idx color-idx shade-idx shape-idx)))
 
-(define shapes (make-vector (* 3 3 3)))
+(define SHAPE-COUNT (* 3 3 3))
+(define CARD-COUNT (* SHAPE-COUNT 3))
 
+(define shapes (make-vector SHAPE-COUNT))
+(define cards (make-vector CARD-COUNT))
+
+
+;; Population functions
+(define (populate-cards)
+  (for* ([s SHAPE-COUNT]
+         [c 3])
+    (vector-set! cards
+                 (+ (* c SHAPE-COUNT) s)
+                 (make-card s (add1 c)))))
+
+(define (populate-shapes)
+  (for* ([color-idx 3]
+         [shape-idx 3]
+         [shade-idx 3])
+    (define c (vector-ref colors color-idx))
+    (define hatch (vector-ref hatches color-idx))
+    (define shape (vector-ref curves shape-idx))
+    (define shade (vector-ref shades shade-idx))
+
+    (vector-set! shapes (compute-idx color-idx shape-idx shade-idx)
+                 (shade shape c hatch))))
+
+
+;; CARDS
+(define (make-card pict-idx cnt)
+  (cc-superimpose (filled-rectangle CARD-WIDTH CARD-HEIGHT #:color CARD-COLOR)
+                  (apply hc-append SHAPE-PADDING
+                         (for/list ([_ cnt]) (vector-ref shapes pict-idx)))))
+
+
+;; SHAPES
 (set-curve-pict-size 50 100)
 (define shape-window (window 0 10 0 28))
 
@@ -79,13 +125,5 @@
 (define (compute-idx i1 i2 i3)
   (+ (* 9 i1) (* 3 i2) i3))
 
-(for* ([color-idx 3]
-       [shape-idx 3]
-       [shade-idx 3])
-  (define c (vector-ref colors color-idx))
-  (define hatch (vector-ref hatches color-idx))
-  (define shape (vector-ref curves shape-idx))
-  (define shade (vector-ref shades shade-idx))
-
-  (vector-set! shapes (compute-idx color-idx shape-idx shade-idx)
-               (shade shape c hatch)))
+(populate-shapes)
+(populate-cards)
