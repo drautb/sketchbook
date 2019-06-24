@@ -50,7 +50,7 @@
 
 ;; CARDS
 (define (make-card pict-idx cnt)
-  (cc-superimpose (filled-rectangle CARD-WIDTH CARD-HEIGHT #:color CARD-COLOR)
+  (cc-superimpose (filled-rectangle CARD-WIDTH CARD-HEIGHT #:color CARD-COLOR #:border-color CARD-COLOR)
                   (apply hc-append SHAPE-PADDING
                          (for/list ([_ cnt]) (vector-ref shapes pict-idx)))))
 
