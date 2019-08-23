@@ -21,7 +21,17 @@ while True:
     if key.endswith("/deployartifact.zip") or \
       "/service_properties/deploy_id/" in key or \
       "us-east-1/dynamodbtable/" in key or \
-      "us-east-1/sqs/" in key:
+      "us-east-1/sqs/" in key or \
+      "acceptance-test-app" in key or \
+      "blueprint-deploy-testapp" in key or \
+      "egglestonbd" in key or \
+      "nicholasterry" in key or \
+      "paas-aws-platform-demo-app" in key or \
+      "roskelleycj" in key or \
+      "slide-test-" in key or \
+      "sqs-queues-service" in key or \
+      "-testapp" in key or \
+      "paas-tutorial" in key:
 
       print("Deleting key: " + key)
       s3.delete_object(Bucket=bucket_name, Key=key)

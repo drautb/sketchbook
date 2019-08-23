@@ -22,7 +22,7 @@ Dir["fs-eng/*.yml"].each do |blueprint_filename|
     systems.each do |system_name, services|
       services.each do |service_name, service_def|
         if service_def.has_key? 'resource_name' and service_def['resource_name'].start_with? resource_name
-          $services.push([blueprint_name, system_name, service_name, service_def['resource_name']])
+          $services.push([service_def['type'], service_def['location'], blueprint_name, system_name, service_name, service_def['resource_name']])
         end
       end
     end
@@ -31,8 +31,8 @@ Dir["fs-eng/*.yml"].each do |blueprint_filename|
   end
 end
 
-puts "Found #{$services.size} services of type '#{resource_name}':"
+puts "Found #{$services.size} services with a resource_name starting with '#{resource_name}':"
 
-$services.each do |b, sys, srv, rn|
-  puts "#{b} | #{sys} | #{srv} | #{rn}"
+$services.each do |t, l, b, sys, srv, rn|
+  puts "#{t} | #{l} | #{b} | #{sys} | #{srv} | #{rn}"
 end
