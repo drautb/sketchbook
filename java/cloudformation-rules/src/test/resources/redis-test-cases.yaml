@@ -1,0 +1,334 @@
+- description: Should have no errors for correct template
+  template:
+    Parameters:
+      cacheSubnetGroup:
+        Type: String
+      clusterSgId:
+        Type: AWS::EC2::SecurityGroup::Id
+      clusterId:
+        Type: String
+      port:
+        Type: Number
+      notificationTopicArn:
+        Type: String
+    Resources:
+      cluster:
+        Type: AWS::ElastiCache::CacheCluster
+        Properties:
+          CacheSubnetGroupName:
+            Ref: cacheSubnetGroup
+          VpcSecurityGroupIds:
+            Ref: clusterSgId
+          ClusterName:
+            Ref: clusterId
+          Port:
+            Ref: port
+          NotificationTopicArn:
+            Fn::If:
+              - conditionName
+              - Ref: notificationTopicArn
+              - Ref: AWS::NoValue
+  errors: []
+
+- description: Should report missing cacheSubnetGroup
+  template:
+    Parameters:
+      clusterSgId:
+        Type: AWS::EC2::SecurityGroup::Id
+      clusterId:
+        Type: String
+      port:
+        Type: Number
+      notificationTopicArn:
+        Type: String
+  errors:
+    - Missing required parameter 'cacheSubnetGroup'
+
+- description: Should report missing clusterSgId
+  template:
+    Parameters:
+      cacheSubnetGroup:
+        Type: String
+      clusterId:
+        Type: String
+      port:
+        Type: Number
+      notificationTopicArn:
+        Type: String
+  errors:
+    - Missing required parameter 'clusterSgId'
+
+- description: Should report missing clusterId
+  template:
+    Parameters:
+      cacheSubnetGroup:
+        Type: String
+      clusterSgId:
+        Type: String
+      port:
+        Type: Number
+      notificationTopicArn:
+        Type: String
+  errors:
+    - Missing required parameter 'clusterId'
+
+- description: Should report missing port
+  template:
+    Parameters:
+      cacheSubnetGroup:
+        Type: String
+      clusterSgId:
+        Type: String
+      clusterId:
+        Type: String
+      notificationTopicArn:
+        Type: String
+  errors:
+    - Missing required parameter 'port'
+
+- description: Should report missing notificationTopicArn
+  template:
+    Parameters:
+      cacheSubnetGroup:
+        Type: String
+      clusterSgId:
+        Type: String
+      clusterId:
+        Type: String
+      port:
+        Type: Number
+  errors:
+    - Missing required parameter 'notificationTopicArn'
+
+- description: Should report wrong type for cacheSubnetGroup
+  template:
+    Parameters:
+      cacheSubnetGroup:
+        Type: Number
+      clusterSgId:
+        Type: AWS::EC2::SecurityGroup::Id
+      clusterId:
+        Type: String
+      port:
+        Type: Number
+      notificationTopicArn:
+        Type: String
+  errors:
+    - Parameter 'cacheSubnetGroup' must have type 'String', but found 'Number'
+
+- description: Should report wrong type for clusterSgId
+  template:
+    Parameters:
+      cacheSubnetGroup:
+        Type: String
+      clusterSgId:
+        Type: String
+      clusterId:
+        Type: String
+      port:
+        Type: Number
+      notificationTopicArn:
+        Type: String
+  errors:
+    - Parameter 'clusterSgId' must have type 'AWS::EC2::SecurityGroup::Id', but found 'String'
+
+- description: Should report wrong type for clusterId
+  template:
+    Parameters:
+      cacheSubnetGroup:
+        Type: String
+      clusterSgId:
+        Type: AWS::EC2::SecurityGroup::Id
+      clusterId:
+        Type: Number
+      port:
+        Type: Number
+      notificationTopicArn:
+        Type: String
+  errors:
+    - Parameter 'clusterId' must have type 'String', but found 'Number'
+
+- description: Should report wrong type for port
+  template:
+    Parameters:
+      cacheSubnetGroup:
+        Type: String
+      clusterSgId:
+        Type: AWS::EC2::SecurityGroup::Id
+      clusterId:
+        Type: String
+      port:
+        Type: String
+      notificationTopicArn:
+        Type: String
+  errors:
+    - Parameter 'port' must have type 'Number', but found 'String'
+
+- description: Should report wrong type for notificationTopicArn
+  template:
+    Parameters:
+      cacheSubnetGroup:
+        Type: String
+      clusterSgId:
+        Type: AWS::EC2::SecurityGroup::Id
+      clusterId:
+        Type: String
+      port:
+        Type: Number
+      notificationTopicArn:
+        Type: Number
+  errors:
+    - Parameter 'notificationTopicArn' must have type 'String', but found 'Number'
+
+- description: Should complain if no cache resource is present
+  template:
+    Parameters:
+      cacheSubnetGroup:
+        Type: String
+      clusterSgId:
+        Type: AWS::EC2::SecurityGroup::Id
+      clusterId:
+        Type: String
+      port:
+        Type: Number
+      notificationTopicArn:
+        Type: String
+    Resources:
+      cache:
+        Type: bogus
+  errors:
+    - Exactly one cache cluster or replication group is required, but was not found.
+    - Only cache clusters, replication groups, and parameter groups are allowed, but found ["bogus"]
+
+- description: Should complain if multiple parameter groups are present
+  template:
+    Parameters:
+      cacheSubnetGroup:
+        Type: String
+      clusterSgId:
+        Type: AWS::EC2::SecurityGroup::Id
+      clusterId:
+        Type: String
+      port:
+        Type: Number
+      notificationTopicArn:
+        Type: String
+    Resources:
+      cache:
+        Type: AWS::ElastiCache::CacheCluster
+        Properties:
+          CacheSubnetGroupName:
+            Ref: cacheSubnetGroup
+          VpcSecurityGroupIds:
+            Ref: clusterSgId
+          ClusterName:
+            Ref: clusterId
+          Port:
+            Ref: port
+          NotificationTopicArn:
+            Fn::If:
+              - conditionName
+              - Ref: notificationTopicArn
+              - Ref: AWS::NoValue
+      pg1:
+        Type: AWS::ElastiCache::ParameterGroup
+      pg2:
+        Type: AWS::ElastiCache::ParameterGroup
+  errors:
+    - At most one parameter group is allowed, but found 2
+
+- description: Should complain if cacheSubnetGroup isn't referenced
+  template:
+    Parameters:
+      cacheSubnetGroup:
+        Type: String
+      clusterSgId:
+        Type: AWS::EC2::SecurityGroup::Id
+      clusterId:
+        Type: String
+      port:
+        Type: Number
+      notificationTopicArn:
+        Type: String
+    Resources:
+      cache:
+        Type: AWS::ElastiCache::CacheCluster
+        Properties:
+          CacheSubnetGroupName: myOwnSubnetGroup
+          VpcSecurityGroupIds:
+            Ref: clusterSgId
+          ClusterName:
+            Ref: clusterId
+          Port:
+            Ref: port
+          NotificationTopicArn:
+            Fn::If:
+              - conditionName
+              - Ref: notificationTopicArn
+              - Ref: AWS::NoValue
+  errors:
+    - The 'CacheSubnetGroupName' property must reference the 'cacheSubnetGroup' input parameter.
+
+- description: Should complain if clusterSgId isn't referenced
+  template:
+    Parameters:
+      cacheSubnetGroup:
+        Type: String
+      clusterSgId:
+        Type: AWS::EC2::SecurityGroup::Id
+      clusterId:
+        Type: String
+      port:
+        Type: Number
+      notificationTopicArn:
+        Type: String
+    Resources:
+      cache:
+        Type: AWS::ElastiCache::CacheCluster
+        Properties:
+          CacheSubnetGroupName:
+            Ref: cacheSubnetGroup
+          VpcSecurityGroupIds: otherSgId
+          ClusterName:
+            Ref: clusterId
+          Port:
+            Ref: port
+          NotificationTopicArn:
+            Fn::If:
+              - conditionName
+              - Ref: notificationTopicArn
+              - Ref: AWS::NoValue
+  errors:
+    - The 'VpcSecurityGroupIds' property must reference the 'clusterSgId' input parameter.
+
+- description: Should complain if clusterId isn't referenced
+  template:
+    Parameters:
+      cacheSubnetGroup:
+        Type: String
+      clusterSgId:
+        Type: AWS::EC2::SecurityGroup::Id
+      clusterId:
+        Type: String
+      port:
+        Type: Number
+      notificationTopicArn:
+        Type: String
+    Resources:
+      cache:
+        Type: AWS::ElastiCache::CacheCluster
+        Properties:
+          CacheSubnetGroupName:
+            Ref: cacheSubnetGroup
+          VpcSecurityGroupIds:
+            Ref: clusterSgId
+          ClusterName: myOwnName
+          Port:
+            Ref: port
+          NotificationTopicArn:
+            Fn::If:
+              - conditionName
+              - Ref: notificationTopicArn
+              - Ref: AWS::NoValue
+  errors:
+    - The 'ClusterName' property must reference the 'clusterId' input parameter.

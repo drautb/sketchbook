@@ -1,0 +1,148 @@
+# Required Parameters
+---
+name: cacheSubnetGroup
+priority: 1
+condition: jp.q("Parameters.cacheSubnetGroup") == null
+actions:
+  - errors.add("Missing required parameter 'cacheSubnetGroup'");
+---
+name: clusterSgId
+priority: 1
+condition: jp.q("Parameters.clusterSgId") == null
+actions:
+  - errors.add("Missing required parameter 'clusterSgId'");
+---
+name: clusterId
+priority: 1
+condition: jp.q("Parameters.clusterId") == null
+actions:
+  - errors.add("Missing required parameter 'clusterId'");
+---
+name: port
+priority: 1
+condition: jp.q("Parameters.port") == null
+actions:
+  - errors.add("Missing required parameter 'port'");
+---
+name: notificationTopicArn
+priority: 1
+condition: jp.q("Parameters.notificationTopicArn") == null
+actions:
+  - errors.add("Missing required parameter 'notificationTopicArn'");
+
+# Required Parameter Types
+---
+name: cacheSubnetGroupType
+priority: 2
+condition: jp.q("Parameters.cacheSubnetGroup.Type") != "String"
+actions:
+  - errors.add("Parameter 'cacheSubnetGroup' must have type 'String', but found '" + jp.q("Parameters.cacheSubnetGroup.Type") + "'");
+---
+name: clusterSgId
+priority: 2
+condition: jp.q("Parameters.clusterSgId.Type") != "AWS::EC2::SecurityGroup::Id"
+actions:
+  - errors.add("Parameter 'clusterSgId' must have type 'AWS::EC2::SecurityGroup::Id', but found '" + jp.q("Parameters.clusterSgId.Type") + "'");
+---
+name: clusterId
+priority: 2
+condition: jp.q("Parameters.clusterId.Type") != "String"
+actions:
+  - errors.add("Parameter 'clusterId' must have type 'String', but found '" + jp.q("Parameters.clusterId.Type") + "'");
+---
+name: port
+priority: 2
+condition: jp.q("Parameters.port.Type") != "Number"
+actions:
+  - errors.add("Parameter 'port' must have type 'Number', but found '" + jp.q("Parameters.port.Type") + "'");
+---
+name: notificationTopicArn
+priority: 2
+condition: jp.q("Parameters.notificationTopicArn.Type") != "String"
+actions:
+  - errors.add("Parameter 'notificationTopicArn' must have type 'String', but found '" + jp.q("Parameters.notificationTopicArn.Type") + "'");
+
+# Specific resource rules.
+---
+name: exactlyOneCacheResource
+priority: 2
+condition: jp.q("length(Resources.* | [?Type=='AWS::ElastiCache::CacheCluster' || Type=='AWS::ElastiCache::ReplicationGroup'])") != 1
+actions:
+  - errors.add("Exactly one cache cluster or replication group is required, but was not found.")
+---
+name: atMostOneParameterGroupResource
+priority: 2
+condition: jp.q("length(Resources.* | [?Type=='AWS::ElastiCache::ParameterGroup'])") > 1
+actions:
+  - errors.add("At most one parameter group is allowed, but found " + jp.q("length(Resources.* | [?Type=='AWS::ElastiCache::ParameterGroup'])"))
+---
+name: noOtherResourcesAllowed
+priority: 2
+condition: jp.q("length(Resources.* | [?Type!='AWS::ElastiCache::CacheCluster' && Type!='AWS::ElastiCache::ReplicationGroup' && Type!='AWS::ElastiCache::ParameterGroup'])") > 0
+actions:
+  - errors.add("Only cache clusters, replication groups, and parameter groups are allowed, but found " + jp.q("Resources.* | [?Type!='AWS::ElastiCache::CacheCluster' && Type!='AWS::ElastiCache::ReplicationGroup' && Type!='AWS::ElastiCache::ParameterGroup'].Type"))
+
+# Parameters must be used correctly
+---
+name: cacheSubnetGroupUsedCorrectly
+priority: 3
+condition: jp.q("Resources.*.Properties[].CacheSubnetGroupName.Ref | [0]") != "cacheSubnetGroup"
+actions:
+  - errors.add("The 'CacheSubnetGroupName' property must reference the 'cacheSubnetGroup' input parameter.");
+---
+name: portUsedCorrectly
+priority: 3
+condition: jp.q("Resources.*.Properties[].Port.Ref | [0]") != "port"
+actions:
+  - errors.add("The 'Port' property must reference the 'port' input parameter.");
+
+# This one is trickier because the input is optional. A condition must be used, which is then checked in the property.
+---
+name: notificationTopicArnUsedCorrectly
+priority: 3
+condition: jp.q("contains(Resources.*.Properties[].NotificationTopicArn.\"Fn::If\"[].Ref, 'notificationTopicArn')") == false
+actions:
+  - errors.add("The 'NotificationTopicArn' property must reference the 'notificationTopicArn' input parameter.");
+
+# Make sure that resource-specific properties use the right input parameters.
+---
+name: clusterSgIdIsUsedCorrectlyForCacheClusters
+priority: 3
+compositeRuleType: ConditionalRuleGroup
+composingRules:
+  - name: isCacheCluster
+    priority: 3
+    condition: jp.q("Resources.* | [?Type=='AWS::ElastiCache::CacheCluster']") != []
+    actions:
+      -
+  - name: clusterSgIdIsUsedCorrectly
+    priority: 4
+    condition: jp.q("Resources.* | [?Type=='AWS::ElastiCache::CacheCluster'].Properties.VpcSecurityGroupIds[].Ref | [0]") != "clusterSgId"
+    actions:
+      - errors.add("The 'VpcSecurityGroupIds' property must reference the 'clusterSgId' input parameter.");
+  - name: clusterIdIsUsedCorrectly
+    priority: 4
+    condition: jp.q("Resources.* | [?Type=='AWS::ElastiCache::CacheCluster'].Properties.ClusterName[].Ref | [0]") != "clusterId"
+    actions:
+      - errors.add("The 'ClusterName' property must reference the 'clusterId' input parameter.");
+
+---
+name: clusterSgIdIsUsedCorrectlyForReplicationGroupsComposite
+priority: 3
+compositeRuleType: ConditionalRuleGroup
+composingRules:
+  - name: isReplicationGroup
+    priority: 3
+    condition: jp.q("Resources.* | [?Type=='AWS::ElastiCache::ReplicationGroup']") != []
+    actions:
+      -
+  - name: clusterSgIdIsUsedCorrectly
+    priority: 4
+    condition: jp.q("Resources.* | [?Type=='AWS::ElastiCache::ReplicationGroup'].Properties.SecurityGroupIds[].Ref | [0]") != "clusterSgId"
+    actions:
+      - errors.add("The 'SecurityGroupIds' property must reference the 'clusterSgId' input parameter.");
+  - name: clusterIdIsUsedCorrectly
+    priority: 4
+    condition: jp.q("Resources.* | [?Type=='AWS::ElastiCache::ReplicationGroup'].Properties.ReplicationGroupId[].Ref | [0]") != "clusterId"
+    actions:
+      - errors.add("The 'ReplicationGroupId' property must reference the 'clusterId' input parameter.");
