@@ -15,19 +15,11 @@
       cluster:
         Type: AWS::ElastiCache::CacheCluster
         Properties:
-          CacheSubnetGroupName:
-            Ref: cacheSubnetGroup
-          VpcSecurityGroupIds:
-            Ref: clusterSgId
-          ClusterName:
-            Ref: clusterId
-          Port:
-            Ref: port
-          NotificationTopicArn:
-            Fn::If:
-              - conditionName
-              - Ref: notificationTopicArn
-              - Ref: AWS::NoValue
+          CacheSubnetGroupName: !Ref cacheSubnetGroup
+          VpcSecurityGroupIds: !Ref clusterSgId
+          ClusterName: !Ref clusterId
+          Port: !Ref port
+          NotificationTopicArn: !If [conditionName, !Ref notificationTopicArn, !Ref "AWS::NoValue"]
   errors: []
 
 - description: Should report missing cacheSubnetGroup
@@ -217,19 +209,11 @@
       cache:
         Type: AWS::ElastiCache::CacheCluster
         Properties:
-          CacheSubnetGroupName:
-            Ref: cacheSubnetGroup
-          VpcSecurityGroupIds:
-            Ref: clusterSgId
-          ClusterName:
-            Ref: clusterId
-          Port:
-            Ref: port
-          NotificationTopicArn:
-            Fn::If:
-              - conditionName
-              - Ref: notificationTopicArn
-              - Ref: AWS::NoValue
+          CacheSubnetGroupName: !Ref cacheSubnetGroup
+          VpcSecurityGroupIds: !Ref clusterSgId
+          ClusterName: !Ref clusterId
+          Port: !Ref port
+          NotificationTopicArn: !If [conditionName, !Ref notificationTopicArn, !Ref "AWS::NoValue"]
       pg1:
         Type: AWS::ElastiCache::ParameterGroup
       pg2:
@@ -255,17 +239,10 @@
         Type: AWS::ElastiCache::CacheCluster
         Properties:
           CacheSubnetGroupName: myOwnSubnetGroup
-          VpcSecurityGroupIds:
-            Ref: clusterSgId
-          ClusterName:
-            Ref: clusterId
-          Port:
-            Ref: port
-          NotificationTopicArn:
-            Fn::If:
-              - conditionName
-              - Ref: notificationTopicArn
-              - Ref: AWS::NoValue
+          VpcSecurityGroupIds: !Ref clusterSgId
+          ClusterName: !Ref clusterId
+          Port: !Ref port
+          NotificationTopicArn: !If [conditionName, !Ref notificationTopicArn, !Ref "AWS::NoValue"]
   errors:
     - The 'CacheSubnetGroupName' property must reference the 'cacheSubnetGroup' input parameter.
 
@@ -286,18 +263,11 @@
       cache:
         Type: AWS::ElastiCache::CacheCluster
         Properties:
-          CacheSubnetGroupName:
-            Ref: cacheSubnetGroup
+          CacheSubnetGroupName: !Ref cacheSubnetGroup
           VpcSecurityGroupIds: otherSgId
-          ClusterName:
-            Ref: clusterId
-          Port:
-            Ref: port
-          NotificationTopicArn:
-            Fn::If:
-              - conditionName
-              - Ref: notificationTopicArn
-              - Ref: AWS::NoValue
+          ClusterName: !Ref clusterId
+          Port: !Ref port
+          NotificationTopicArn: !If [conditionName, !Ref notificationTopicArn, !Ref "AWS::NoValue"]
   errors:
     - The 'VpcSecurityGroupIds' property must reference the 'clusterSgId' input parameter.
 
@@ -318,17 +288,10 @@
       cache:
         Type: AWS::ElastiCache::CacheCluster
         Properties:
-          CacheSubnetGroupName:
-            Ref: cacheSubnetGroup
-          VpcSecurityGroupIds:
-            Ref: clusterSgId
+          CacheSubnetGroupName: !Ref cacheSubnetGroup
+          VpcSecurityGroupIds: !Ref clusterSgId
           ClusterName: myOwnName
-          Port:
-            Ref: port
-          NotificationTopicArn:
-            Fn::If:
-              - conditionName
-              - Ref: notificationTopicArn
-              - Ref: AWS::NoValue
+          Port: !Ref port
+          NotificationTopicArn: !If [conditionName, !Ref notificationTopicArn, !Ref "AWS::NoValue"]
   errors:
     - The 'ClusterName' property must reference the 'clusterId' input parameter.

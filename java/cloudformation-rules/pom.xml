@@ -40,6 +40,12 @@
     </dependency>
 
     <dependency>
+      <groupId>org.yaml</groupId>
+      <artifactId>snakeyaml</artifactId>
+      <version>1.17</version>
+    </dependency>
+
+    <dependency>
       <groupId>org.jeasy</groupId>
       <artifactId>easy-rules-support</artifactId>
       <version>3.3.0</version>

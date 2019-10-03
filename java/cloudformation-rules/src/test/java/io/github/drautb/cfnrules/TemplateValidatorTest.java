@@ -2,12 +2,13 @@ package io.github.drautb.cfnrules;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.junit.Before;
 import org.junit.Test;
+import org.yaml.snakeyaml.Yaml;
 
-import java.io.File;
+import java.io.InputStream;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -16,7 +17,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 public class TemplateValidatorTest {
 
-  private static final ObjectMapper MAPPER = new ObjectMapper(new YAMLFactory());
+  private static final Yaml YAML = new Yaml(new CloudFormationConstructor());
 
   private TemplateValidator validator;
 
@@ -26,9 +27,11 @@ public class TemplateValidatorTest {
   }
 
   @Test
-  public void executeTestCases() throws Exception {
-    File testCaseFile = new File(ClassLoader.getSystemResource("redis-test-cases.yaml").toURI());
-    List<TestCase> testCases = MAPPER.readValue(testCaseFile, new TypeReference<List<TestCase>>() {});
+  @SuppressWarnings("unchecked")
+  public void executeTestCases() {
+    InputStream testCaseStream = ClassLoader.getSystemResourceAsStream("redis-test-cases.yaml");
+    List<Map<Object, Object>> testCasesRaw = (List<Map<Object, Object>>) YAML.load(testCaseStream);
+    List<TestCase> testCases = new ObjectMapper().convertValue(testCasesRaw, new TypeReference<List<TestCase>>() {});
 
     for (int i = 0; i < testCases.size(); i++) {
       TestCase tc = testCases.get(i);
