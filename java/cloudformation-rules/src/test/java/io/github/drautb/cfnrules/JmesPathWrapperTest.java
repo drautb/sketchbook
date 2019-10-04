@@ -5,8 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.burt.jmespath.Expression;
 import io.burt.jmespath.JmesPath;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
 import java.util.ArrayList;
@@ -34,7 +34,7 @@ public class JmesPathWrapperTest {
 
   private JmesPathWrapper testModel;
 
-  @Before
+  @BeforeEach
   public void setup() throws Exception {
     initMocks(this);
 
