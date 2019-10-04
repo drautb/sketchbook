@@ -4,8 +4,8 @@ import org.jeasy.rules.api.Facts;
 import org.jeasy.rules.api.Rule;
 import org.jeasy.rules.core.BasicRule;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,7 +23,7 @@ public class EarlyReturnListenerTest {
 
   private EarlyReturnListener testModel;
 
-  @Before
+  @BeforeEach
   public void setup() {
     rule = new BasicRule();
     facts = new Facts();
