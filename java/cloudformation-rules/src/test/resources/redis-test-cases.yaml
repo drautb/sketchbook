@@ -183,6 +183,7 @@
       port: 8000
     incomingParameterValues:
       port: 9000
+      allowReplacements: false
   template:
     Parameters:
       cacheSubnetGroup:
@@ -206,6 +207,37 @@
           NotificationTopicArn: !If [conditionName, !Ref notificationTopicArn, !Ref "AWS::NoValue"]
   errors:
     - Parameter 'port' can not be changed without experiencing downtime!  Current value='8000' is being replaced with value='9000'
+
+- description: Should report that the port can be changed after creation if allowReplacements has been set
+  facts:
+    stackExists: true
+    previousParameterValues:
+      port: 8000
+    incomingParameterValues:
+      port: 9000
+      allowReplacements: true
+  template:
+    Parameters:
+      cacheSubnetGroup:
+        Type: String
+      clusterSgId:
+        Type: AWS::EC2::SecurityGroup::Id
+      clusterId:
+        Type: String
+      port:
+        Type: Number
+      notificationTopicArn:
+        Type: String
+    Resources:
+      cluster:
+        Type: AWS::ElastiCache::CacheCluster
+        Properties:
+          CacheSubnetGroupName: !Ref cacheSubnetGroup
+          VpcSecurityGroupIds: !Ref clusterSgId
+          ClusterName: !Ref clusterId
+          Port: !Ref port
+          NotificationTopicArn: !If [conditionName, !Ref notificationTopicArn, !Ref "AWS::NoValue"]
+  errors: []
 
 - description: Should report wrong type for notificationTopicArn
   facts:

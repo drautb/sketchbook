@@ -149,6 +149,6 @@ composingRules:
 ---
 name: port
 priority: 3
-condition: stackExists == true && previousParameterValues.port != incomingParameterValues.port
+condition: stackExists == true && previousParameterValues.port != incomingParameterValues.port && incomingParameterValues.allowReplacements == false
 actions:
   - errors.add("Parameter 'port' can not be changed without experiencing downtime!  Current value='" + previousParameterValues.port + "' is being replaced with value='" + incomingParameterValues.port + "'");

@@ -6,7 +6,6 @@
   <artifactId>cloudformation-rules</artifactId>
   <version>1.0-SNAPSHOT</version>
 
-
   <name>cloudformation-rules</name>
 
   <properties>
