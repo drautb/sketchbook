@@ -146,3 +146,9 @@ composingRules:
     condition: jp.q("Resources.* | [?Type=='AWS::ElastiCache::ReplicationGroup'].Properties.ReplicationGroupId[].Ref | [0]") != "clusterId"
     actions:
       - errors.add("The 'ReplicationGroupId' property must reference the 'clusterId' input parameter.");
+---
+name: port
+priority: 3
+condition: stackExists == true && previousParameterValues.port != incomingParameterValues.port
+actions:
+  - errors.add("Parameter 'port' can not be changed without experiencing downtime!  Current value='" + previousParameterValues.port + "' is being replaced with value='" + incomingParameterValues.port + "'");

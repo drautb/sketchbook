@@ -30,7 +30,7 @@ public class TemplateValidatorTest {
 
     return testCases.stream().map(testCase -> DynamicTest.dynamicTest(testCase.description,
         () -> {
-      List<String> actualErrors = validator.check(testCase.template);
+      List<String> actualErrors = validator.check(testCase.template, testCase.facts);
       assertThat(actualErrors).isEqualTo(testCase.errors);
     }));
 

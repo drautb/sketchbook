@@ -1,4 +1,6 @@
 - description: Should have no errors for correct template
+  facts:
+    stackExists: false
   template:
     Parameters:
       cacheSubnetGroup:
@@ -23,6 +25,8 @@
   errors: []
 
 - description: Should report missing cacheSubnetGroup
+  facts:
+    stackExists: false
   template:
     Parameters:
       clusterSgId:
@@ -37,6 +41,8 @@
     - Missing required parameter 'cacheSubnetGroup'
 
 - description: Should report missing clusterSgId
+  facts:
+    stackExists: false
   template:
     Parameters:
       cacheSubnetGroup:
@@ -51,6 +57,8 @@
     - Missing required parameter 'clusterSgId'
 
 - description: Should report missing clusterId
+  facts:
+    stackExists: false
   template:
     Parameters:
       cacheSubnetGroup:
@@ -65,6 +73,8 @@
     - Missing required parameter 'clusterId'
 
 - description: Should report missing port
+  facts:
+    stackExists: false
   template:
     Parameters:
       cacheSubnetGroup:
@@ -79,6 +89,8 @@
     - Missing required parameter 'port'
 
 - description: Should report missing notificationTopicArn
+  facts:
+    stackExists: false
   template:
     Parameters:
       cacheSubnetGroup:
@@ -93,6 +105,8 @@
     - Missing required parameter 'notificationTopicArn'
 
 - description: Should report wrong type for cacheSubnetGroup
+  facts:
+    stackExists: false
   template:
     Parameters:
       cacheSubnetGroup:
@@ -109,6 +123,8 @@
     - Parameter 'cacheSubnetGroup' must have type 'String', but found 'Number'
 
 - description: Should report wrong type for clusterSgId
+  facts:
+    stackExists: false
   template:
     Parameters:
       cacheSubnetGroup:
@@ -125,6 +141,8 @@
     - Parameter 'clusterSgId' must have type 'AWS::EC2::SecurityGroup::Id', but found 'String'
 
 - description: Should report wrong type for clusterId
+  facts:
+    stackExists: false
   template:
     Parameters:
       cacheSubnetGroup:
@@ -141,6 +159,8 @@
     - Parameter 'clusterId' must have type 'String', but found 'Number'
 
 - description: Should report wrong type for port
+  facts:
+    stackExists: false
   template:
     Parameters:
       cacheSubnetGroup:
@@ -156,7 +176,40 @@
   errors:
     - Parameter 'port' must have type 'Number', but found 'String'
 
+- description: Should report that port can not be changed after creation
+  facts:
+    stackExists: true
+    previousParameterValues:
+      port: 8000
+    incomingParameterValues:
+      port: 9000
+  template:
+    Parameters:
+      cacheSubnetGroup:
+        Type: String
+      clusterSgId:
+        Type: AWS::EC2::SecurityGroup::Id
+      clusterId:
+        Type: String
+      port:
+        Type: Number
+      notificationTopicArn:
+        Type: String
+    Resources:
+      cluster:
+        Type: AWS::ElastiCache::CacheCluster
+        Properties:
+          CacheSubnetGroupName: !Ref cacheSubnetGroup
+          VpcSecurityGroupIds: !Ref clusterSgId
+          ClusterName: !Ref clusterId
+          Port: !Ref port
+          NotificationTopicArn: !If [conditionName, !Ref notificationTopicArn, !Ref "AWS::NoValue"]
+  errors:
+    - Parameter 'port' can not be changed without experiencing downtime!  Current value='8000' is being replaced with value='9000'
+
 - description: Should report wrong type for notificationTopicArn
+  facts:
+    stackExists: false
   template:
     Parameters:
       cacheSubnetGroup:
@@ -173,6 +226,8 @@
     - Parameter 'notificationTopicArn' must have type 'String', but found 'Number'
 
 - description: Should complain if no cache resource is present
+  facts:
+    stackExists: false
   template:
     Parameters:
       cacheSubnetGroup:
@@ -193,6 +248,8 @@
     - Only cache clusters, replication groups, and parameter groups are allowed, but found ["bogus"]
 
 - description: Should complain if multiple parameter groups are present
+  facts:
+    stackExists: false
   template:
     Parameters:
       cacheSubnetGroup:
@@ -222,6 +279,8 @@
     - At most one parameter group is allowed, but found 2
 
 - description: Should complain if cacheSubnetGroup isn't referenced
+  facts:
+    stackExists: false
   template:
     Parameters:
       cacheSubnetGroup:
@@ -247,6 +306,8 @@
     - The 'CacheSubnetGroupName' property must reference the 'cacheSubnetGroup' input parameter.
 
 - description: Should complain if clusterSgId isn't referenced
+  facts:
+    stackExists: false
   template:
     Parameters:
       cacheSubnetGroup:
@@ -272,6 +333,8 @@
     - The 'VpcSecurityGroupIds' property must reference the 'clusterSgId' input parameter.
 
 - description: Should complain if clusterId isn't referenced
+  facts:
+    stackExists: false
   template:
     Parameters:
       cacheSubnetGroup:
