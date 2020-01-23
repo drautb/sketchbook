@@ -1,0 +1,24 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      java: corretto11
+  pre_build:
+    commands:
+      - echo "Creating file 'foo' in pre_build"
+      - echo "hey Ben!" > foo
+  build:
+    commands:
+      - echo Build started on `date`
+      - mvn -q install
+      - echo "Dumping file 'foo'"
+      - cat foo
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      - echo "Dumping file 'foo'"
+      - cat foo
+artifacts:
+  files:
+    - target/messageUtil-1.0.jar

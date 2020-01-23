@@ -39,3 +39,7 @@ fs-eng/
 fs-webdev/
 experiments.yml
 references.json
+
+# CDK asset staging directory
+.cdk.staging
+cdk.out
