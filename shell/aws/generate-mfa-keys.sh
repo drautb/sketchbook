@@ -8,7 +8,7 @@ access_key=$(echo "$creds" | jq -r .Credentials.AccessKeyId)
 secret_key=$(echo "$creds" | jq -r .Credentials.SecretAccessKey)
 token=$(echo "$creds" | jq -r .Credentials.SessionToken)
 
-cat << EOF > ~/dpt-playground-mfa-env
+cat << EOF > ~/dpt-development-mfa-env
 export AWS_ACCESS_KEY_ID='$access_key'
 export AWS_SECRET_ACCESS_KEY='$secret_key'
 export AWS_SESSION_TOKEN='$token'
