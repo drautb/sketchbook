@@ -1,0 +1,21 @@
+digraph G {
+    graph [fontname = "consolas"];
+    node [fontname = "consolas"];
+    edge [fontname = "consolas"];
+    bgcolor = white;
+
+    1 [label="WorkflowExecutionStarted (1)"];
+    2 [label="DecisionTaskScheduled (2)" shape=diamond];
+    3 [label="DecisionTaskStarted (3)" shape=diamond style=filled color=lightblue];
+    4 [label="DecisionTaskCompleted (4)" shape=diamond];
+    5 [label="ActivityTaskScheduled (5)" shape=box];
+    6 [label="ActivityTaskStarted (6)" shape=box style=filled color=green];
+    7 [label="ActivityTaskCompleted (7)" shape=box];
+    8 [label="DecisionTaskScheduled (8)" shape=diamond];
+    9 [label="DecisionTaskStarted (9)" shape=diamond style=filled color=lightblue];
+    10 [label="DecisionTaskCompleted (10)" shape=diamond];
+    11 [label="WorkflowExecutionCompleted (11)"];
+
+    1 -> 2
+    2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10 -> 11
+}

@@ -1,0 +1,10 @@
+[package]
+name = "swf_graph_generator"
+version = "0.1.0"
+authors = ["Ben Draut <drautb@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+rusoto_core = "0.39.0"
+rusoto_swf = "0.39.0"
+structopt = "0.2.17"
