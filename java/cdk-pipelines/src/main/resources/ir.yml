@@ -1,0 +1,34 @@
+name: drautb-test-blueprint
+version: 2.0
+
+systems:
+  dev:
+    app:
+      type: beanstalk
+      location: development-fh5-useast1-primary-1
+
+pipelines:
+  - name: main
+    stages:
+    - name: check-my-blueprint
+      actions:
+        - name: Check
+          size: SMALL
+          runtime-versions:
+            java: coretto8
+          commands:
+            - mvn paas-sysps:check
+    - name: build-and-deploy
+      actions:
+        - name: build-artifact
+          size: LARGE
+          runtime-versions:
+            java: coretto8
+          commands:
+            - mvn clean install
+        - name: deploy-dev
+          size: SMALL
+          runtime-versions:
+            java: coretto8
+          commands:
+            - mvn paas-sysps:deploy -Dsystem=dev
