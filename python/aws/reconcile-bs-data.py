@@ -123,8 +123,8 @@ summary_template = "\nFOUND: {}\n" +\
   "UNKNOWN DSS RESPONSE: {}"
 print(summary_template.format(found,
   missing,
-  missing_no_blueprint, int((missing_no_blueprint / missing) * 100.0),
-  missing_with_blueprint, int((missing_with_blueprint / missing) * 100.0),
+  missing_no_blueprint, int((missing_no_blueprint / (missing if missing > 0 else 1)) * 100.0),
+  missing_with_blueprint, int((missing_with_blueprint / (missing if missing > 0 else 1)) * 100.0),
   other))
 
 print("--------------------------------------------------")
@@ -133,3 +133,9 @@ print("--------------------------------------------------")
 for k in missing_with_blueprint_keys:
   print("| {}".format(k))
 print("--------------------------------------------------")
+
+print("\nDeleting contexts with no DSS entry and no blueprint...")
+for k in missing_blueprint_keys:
+  full_key = PREFIX + k
+  print("Deleting s3://{}/{}".format(BUCKET, full_key))
+  s3.delete_object(Bucket=BUCKET, Key=full_key)
