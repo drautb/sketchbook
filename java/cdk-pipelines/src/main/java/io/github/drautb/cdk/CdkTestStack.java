@@ -52,13 +52,16 @@ public class CdkTestStack extends Stack {
     final PrincipalBase codeBuildPrincipal = ServicePrincipal.Builder.create("codebuild.amazonaws.com").build();
     final PrincipalBase codePipelinePrincipal = ServicePrincipal.Builder.create("codepipeline.amazonaws.com").build();
 
-    final Role codeBuildRole = Role.Builder.create(this, "CodeBuildRole")
-        .assumedBy(new CompositePrincipal(codeBuildPrincipal, codePipelinePrincipal))
+    final Role codePipelineRole = Role.Builder.create(this, "CodePipelineRole")
+        .assumedBy(codePipelinePrincipal)
         .permissionsBoundary(boundaryPolicy)
         .build();
 
-    final Role codePipelineRole = Role.Builder.create(this, "CodePipelineRole")
-        .assumedBy(codePipelinePrincipal)
+    final Role codeBuildRole = Role.Builder.create(this, "CodeBuildRole")
+        .assumedBy(new CompositePrincipal(
+            codeBuildPrincipal,
+            codePipelinePrincipal,
+            new ArnPrincipal(codePipelineRole.getRoleArn())))
         .permissionsBoundary(boundaryPolicy)
         .build();
 
@@ -104,7 +107,6 @@ public class CdkTestStack extends Stack {
               .project(project)
               .role(codeBuildRole)
               .runOrder(action.getRunOrder())
-              .type(CodeBuildActionType.BUILD) // TODO: is this necessary? build and test are the only options, they don't cover all uses.
               .input(Artifact.artifact("checkout")) // Every action gets the checkout directory as an input.
               .build();
 
