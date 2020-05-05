@@ -15,4 +15,4 @@ tmp_new=$(mktemp)
 < "$clean_file" jq -r -s -S '.[1].result._raw' | jq -S > "$tmp_old"
 < "$clean_file" jq -r -s -S '.[0].result._raw' | jq -S > "$tmp_new"
 
-colordiff -y "$tmp_old" "$tmp_new"
+colordiff -yW"$(tput cols)" "$tmp_old" "$tmp_new"
