@@ -3,7 +3,9 @@
 def stuff_to_entities(f): f |
   # Create a flat list of tokens with newlines inserted as
   # the post character for the final token on each line.
-  [.regions[].lines[] | .tokens[:-1] + [.tokens[-1] | .post = "\n"]] | flatten
+  [ (if .regions == null then
+      .pages[].regions[].lines[] else
+      .regions[].lines[] end) | .tokens[:-1] + [.tokens[-1] | .post = "\n"]] | flatten
 
   # Stitch tokens together. Tokens without a position field are
   # naturally dropped, unless they fall between tokens with a
