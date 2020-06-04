@@ -2,6 +2,7 @@
 
 BEGIN {
   print "digraph {"
+  print "  node [shape=record]"
 }
 {
   if (!/<RELEX /) {
