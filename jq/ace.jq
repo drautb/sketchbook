@@ -39,3 +39,10 @@ def stuff_to_entities(f): f |
     orig: .orig | join("") | ltrimstr(" ") | rtrimstr(" "),
     type
   };
+
+
+# Takes a .stuff object as input, and produces a sequence of token objects.
+def stuff_to_tokens(f): f |
+  if .regions == null then
+    .pages[].regions[].lines[].tokens[] else
+    .regions[].lines[].tokens[] end;
