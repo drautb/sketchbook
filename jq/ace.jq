@@ -46,3 +46,66 @@ def stuff_to_tokens(f): f |
   if .regions == null then
     .pages[].regions[].lines[].tokens[] else
     .regions[].lines[].tokens[] end;
+
+
+# Input: .stuff object
+# Output: Token sequences where two date tokens are separated by 1-3 unlabeled tokens.
+def extract_date_separating_tokens(f): f |
+  # Convert stuff to tokens
+  [stuff_to_tokens(.)]
+
+  | foreach .[] as $token ({
+      in_sequence: false,
+      tokens: []
+    };
+
+    if ($token.type != null) and
+       ($token.type | contains("DATE")) and
+       ($token.position == "E" or $token.position == "U") then
+      {
+        in_sequence: true,
+        tokens: [$token]
+      }
+    else
+      if .in_sequence and
+         ($token.type != null) and
+         ($token.type | contains("DATE")) and
+         ($token.position == "B" or $token.position == "U") then
+        {
+          in_sequence: false,
+          tokens: (.tokens + [$token])
+        }
+      else
+        if .in_sequence then
+          {
+            in_sequence: true,
+            tokens: (.tokens + [$token])
+          }
+        else
+          {
+            in_sequence: false,
+            tokens: []
+          }
+        end
+      end
+    end;
+
+    if .in_sequence == false and
+       .tokens != [] and
+       (.tokens | length) <= 7 then   # 2 tokens for the caps, 5 for separators.
+      {
+        file: input_filename,
+        tokens: .tokens
+      }
+    else
+      empty
+    end);
+
+
+def summarize_date_separating_tokens(f): f |
+  {
+    file: .file,
+    start: (.tokens[0] | .type),
+    end: (.tokens[-1:][0] | .type),
+    separators: (.tokens[1:-1] | [.[] | .text])
+  };
