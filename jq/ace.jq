@@ -105,7 +105,7 @@ def extract_date_separating_tokens(f): f |
 def summarize_date_separating_tokens(f): f |
   {
     file: .file,
-    start: (.tokens[0] | .type),
-    end: (.tokens[-1:][0] | .type),
+    start: .tokens[0],
+    end: .tokens[-1:][0],
     separators: (.tokens[1:-1] | [.[] | .text])
   };
