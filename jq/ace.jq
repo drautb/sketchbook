@@ -49,8 +49,10 @@ def stuff_to_tokens(f): f |
 
 
 # Input: .stuff object
-# Output: Token sequences where two date tokens are separated by 1-3 unlabeled tokens.
-def extract_date_separating_tokens(f): f |
+# Arguments: String that must be contained in the type of the bookend tokens.
+# Output: Token sequences where two tokens tokens whose types contain
+# $type_contains are separated by 1-$threshold other tokens.
+def extract_separating_tokens($type_contains; $threshold):
   # Convert stuff to tokens
   [stuff_to_tokens(.)]
 
@@ -60,7 +62,7 @@ def extract_date_separating_tokens(f): f |
     };
 
     if ($token.type != null) and
-       ($token.type | contains("DATE")) and
+       ($token.type | contains($type_contains)) and
        ($token.position == "E" or $token.position == "U") then
       {
         in_sequence: true,
@@ -69,7 +71,7 @@ def extract_date_separating_tokens(f): f |
     else
       if .in_sequence and
          ($token.type != null) and
-         ($token.type | contains("DATE")) and
+         ($token.type | contains($type_contains)) and
          ($token.position == "B" or $token.position == "U") then
         {
           in_sequence: false,
@@ -92,7 +94,7 @@ def extract_date_separating_tokens(f): f |
 
     if .in_sequence == false and
        .tokens != [] and
-       (.tokens | length) <= 7 then   # 2 tokens for the caps, 5 for separators.
+       ((.tokens | length) <= ($threshold + 2)) then   # 2 tokens for the caps.
       {
         file: input_filename,
         tokens: .tokens
@@ -102,7 +104,7 @@ def extract_date_separating_tokens(f): f |
     end);
 
 
-def summarize_date_separating_tokens(f): f |
+def summarize_separating_tokens(f): f |
   {
     file: .file,
     start: .tokens[0],
