@@ -49,6 +49,22 @@ def stuff_to_tokens(f): f |
 
 
 # Input: .stuff object
+# Arguments: String that must be contained in the type of the target token.
+#            Number of trailing tokens to collect.
+# Output: Token sequences of specified lendth that follow tokens of the given type.
+def extract_trailing_tokens($type_contains; $count):
+  [stuff_to_tokens(.)] | . as $tokens
+
+  ## Find indices of E/U tokens containing the type,
+  | [indices(.[] |
+      select(.type != null and (.type | contains($type_contains)) and
+             (.position == "U" or .position == "E")))] | flatten
+
+  ### Project those indices + count from the token list.
+  | map($tokens[.:(. + $count + 1)]);
+
+
+# Input: .stuff object
 # Arguments: String that must be contained in the type of the bookend tokens.
 # Output: Token sequences where two tokens tokens whose types contain
 # $type_contains are separated by 1-$threshold other tokens.
