@@ -64,6 +64,17 @@ def extract_trailing_tokens($type_contains; $count):
   | map($tokens[.:(. + $count + 1)]);
 
 
+def extract_trailing_tokens_using_text($text_contains; $count):
+  [stuff_to_tokens(.)] | . as $tokens
+
+  ## Find indices of tokens containing the text.
+  | [indices(.[] |
+      select(.text != null and (.text | contains($text_contains))))] | flatten
+
+  ## Project those indicies + count from the token list.
+  | map($tokens[.:(. + $count + 1)]);
+
+
 # Input: .stuff object
 # Arguments: String that must be contained in the type of the bookend tokens.
 # Output: Token sequences where two tokens tokens whose types contain
