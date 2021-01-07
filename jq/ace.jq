@@ -48,6 +48,10 @@ def stuff_to_tokens(f): f |
     .regions[].lines[].tokens[] end;
 
 
+def stuff_to_text(f): f |
+  [stuff_to_tokens(.) | .text] | join(" ");
+
+
 # Input: .stuff object
 # Arguments: String that must be contained in the type of the target token.
 #            Number of trailing tokens to collect.
@@ -64,6 +68,17 @@ def extract_trailing_tokens($type_contains; $count):
   | map($tokens[.:(. + $count + 1)]);
 
 
+def extract_preceding_tokens_using_text($text_contains; $count):
+  [stuff_to_tokens(.)] | . as $tokens
+
+  ## Find indices of tokens containing the text.
+  | [indices(.[] |
+      select(.text != null and (.text | contains($text_contains))))] | flatten
+
+  ## Project those indicies + count from the token list.
+  | map($tokens[(. - $count):.]);
+
+
 def extract_trailing_tokens_using_text($text_contains; $count):
   [stuff_to_tokens(.)] | . as $tokens
 
@@ -73,6 +88,17 @@ def extract_trailing_tokens_using_text($text_contains; $count):
 
   ## Project those indicies + count from the token list.
   | map($tokens[.:(. + $count + 1)]);
+
+
+def extract_surrounding_tokens_using_text($text_contains; $pre_count; $post_count):
+  [stuff_to_tokens(.)] | . as $tokens
+
+  ## Find indices of tokens containing the text.
+  | [indices(.[] |
+      select(.text != null and (.text | contains($text_contains))))] | flatten
+
+  ## Project those indicies + count from the token list.
+  | map($tokens[(. - $pre_count):(. + $post_count + 1)]);
 
 
 # Input: .stuff object
