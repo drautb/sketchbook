@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <!-- This is critical for debugging issues with logback (like logs stopping unexpectedly -->
+  <statusListener class="ch.qos.logback.core.status.OnErrorConsoleStatusListener"/>
+
+  <appender name="APPENDER" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+      <immediateFlush>false</immediateFlush>
+      <providers>
+        <pattern>
+          <pattern>
+            {
+            "level": "%level",
+            "message": "%message",
+            "timestamp": "%date{ISO8601}",
+            "thread": "%thread"
+            }
+          </pattern>
+        </pattern>
+
+        <arguments/>
+        <mdc/>
+        <loggerName/>
+
+        <!-- Include the provided markers in the log output if available -->
+        <logstashMarkers/>
+
+        <stackTrace>
+          <throwableConverter class="net.logstash.logback.stacktrace.ShortenedThrowableConverter">
+            <rootCauseFirst>true</rootCauseFirst>
+            <maxDepthPerThrowable>60</maxDepthPerThrowable>
+            <exclude>sun\.reflect\..*\.invoke.*</exclude>
+            <exclude>rx\..*</exclude>
+            <exclude>java\.lang\.reflect\..*</exclude>
+            <exclude>org\.springframework\..*</exclude>
+            <exclude>com\.netflix\.hystrix.*</exclude>
+            <exclude>net\.sf\.cglib\.proxy\.MethodProxy\.invoke</exclude>
+            <exclude>org\.apache\..*</exclude>
+          </throwableConverter>
+        </stackTrace>
+       </providers>
+    </encoder>
+  </appender>
+
+  <root level="INFO" additivity="false">
+    <appender-ref ref="APPENDER"/>
+  </root>
+
+</configuration>
