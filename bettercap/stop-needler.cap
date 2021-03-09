@@ -1,0 +1,2 @@
+packet.proxy off
+arp.spoof off

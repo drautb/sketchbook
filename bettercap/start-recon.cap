@@ -1,0 +1,7 @@
+set arp.spoof.whitelist ...
+set arp.spoof.fullduplex true
+
+set net.sniff.filter "ip proto \tc"
+
+arp.spoof on
+net.sniff on
