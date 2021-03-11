@@ -2,9 +2,11 @@ package main
 
 import (
 	"math"
+	"math/rand"
 	"net"
 	"sync/atomic"
 	"time"
+	"unsafe"
 
 	"github.com/bettercap/bettercap/log"
 	"github.com/chifflier/nfqueue-go/nfqueue"
@@ -14,17 +16,33 @@ import (
 )
 
 var raspberryPiIP net.IP = net.ParseIP("192.168.0.17")
-var label = tui.Wrap(tui.BACKRED, tui.Wrap(tui.FOREBLACK, "needler"))
+var label = tui.Wrap(tui.BACKRED, tui.Wrap(tui.FOREBLACK, "gatekeeper"))
 
 var quit chan bool
 
 var dropped uint64
 var passed uint64
+var threshold float64
 
 func init() {
 	// Use buffered channel so that the sleeping heartbeat goroutine
 	// doesn't block the main thread.
 	quit = make(chan bool, 2)
+}
+
+func updateThreshold() {
+	for {
+		select {
+		case <-quit:
+			log.Info("%s Threshold update shutting down...", label)
+			return
+		default:
+			seconds := time.Now().Unix() % 315
+			newThreshold := math.Max(0.7, 0.25*math.Sin(float64(seconds)/50)+0.75)
+			atomicStoreFloat64(&threshold, newThreshold)
+			time.Sleep(5)
+		}
+	}
 }
 
 func heartbeat() {
@@ -42,26 +60,33 @@ func heartbeat() {
 				pctDropped = float64(dropped) / float64(total) * 100.0
 			}
 			log.Info("%s Passed: %d - Dropped: %d (%.2f%%) - Total: %d", label, p, d, pctDropped, total)
+			log.Info("%s Current Threshold: %f", label, atomicLoadFloat64(&threshold))
 			time.Sleep(60 * time.Second)
 		}
 	}
 }
 
+// OnStart callback from packet proxy
 func OnStart() int {
 	atomic.StoreUint64(&dropped, 0)
 	atomic.StoreUint64(&passed, 0)
+	atomicStoreFloat64(&threshold, 0.0)
 
 	go heartbeat()
+	go updateThreshold()
+	log.Info("%s Initial threshold: %f", label, atomicLoadFloat64(&threshold))
 
 	return 0
 }
 
+// OnStop callback from packet proxy
 func OnStop() {
 	atomic.StoreUint64(&dropped, 0)
 	atomic.StoreUint64(&passed, 0)
+	atomicStoreFloat64(&threshold, 0.0)
 
-	// Signal the heartbeat goroutine to exit.
-	quit <- true
+	// Signal background goroutines to exit.
+	close(quit)
 }
 
 // OnPacket callback from packet proxy.
@@ -69,9 +94,11 @@ func OnPacket(payload *nfqueue.Payload) int {
 	packet := gopacket.NewPacket(payload.Data, layers.LayerTypeIPv4, gopacket.NoCopy)
 
 	var srcIP net.IP
+	var dstIP net.IP
 	if ipv4Layer := packet.Layer(layers.LayerTypeIPv4); ipv4Layer != nil {
 		ipv4, _ := ipv4Layer.(*layers.IPv4)
 		srcIP = ipv4.SrcIP
+		dstIP = ipv4.DstIP
 	}
 
 	/*
@@ -79,11 +106,8 @@ func OnPacket(payload *nfqueue.Payload) int {
 	 * to drop in the branch. That didn't work though - it seems like whatever you set
 	 * first as the verdict sticks?
 	 */
-	if !raspberryPiIP.Equal(srcIP) {
-		// max(0.7, 0.25*sin(x/100) + 0.75)
-		// https://www.wolframalpha.com/input/?i=max%280.7%2C+0.25*sin%28x%2F100%29+%2B+0.75%29
-		threshold := math.Max(0.7, 0.25*math.Sin(time.Now().Unix()/100.0)+0.75)
-
+	if !raspberryPiIP.Equal(srcIP) && !raspberryPiIP.Equal(dstIP) &&
+		rand.Float64() < atomicLoadFloat64(&threshold) {
 		atomic.AddUint64(&dropped, 1)
 		payload.SetVerdict(nfqueue.NF_DROP)
 	} else {
@@ -92,4 +116,12 @@ func OnPacket(payload *nfqueue.Payload) int {
 	}
 
 	return 0
+}
+
+func atomicStoreFloat64(x *float64, newValue float64) {
+	atomic.StoreUint64((*uint64)(unsafe.Pointer(x)), math.Float64bits(newValue))
+}
+
+func atomicLoadFloat64(x *float64) float64 {
+	return math.Float64frombits(atomic.LoadUint64((*uint64)(unsafe.Pointer(x))))
 }
