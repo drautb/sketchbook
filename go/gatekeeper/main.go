@@ -1,9 +1,11 @@
 package main
 
 import (
+	"io/ioutil"
 	"math"
 	"math/rand"
 	"net"
+	"strconv"
 	"sync/atomic"
 	"time"
 	"unsafe"
@@ -30,16 +32,33 @@ func init() {
 	quit = make(chan bool, 2)
 }
 
-func updateThreshold() {
+func updateThreshold(useFile bool) {
 	for {
 		select {
 		case <-quit:
 			log.Info("%s Threshold update shutting down...", label)
 			return
 		default:
-			seconds := time.Now().Unix() % 315
-			newThreshold := 0.05*math.Sin(float64(seconds)/50) + 0.05
-			atomicStoreFloat64(&threshold, newThreshold)
+			if useFile {
+				oldThreshold := atomicLoadFloat64(&threshold)
+				dat, err := ioutil.ReadFile("/home/pi/threshold")
+				if err != nil {
+					log.Error("%s Failed to load threshold file: ", label, err)
+				}
+				newThreshold, err := strconv.ParseFloat(string(dat), 64)
+				if err != nil {
+					log.Error("%s Failed to parse threshold: ", label, err)
+				}
+
+				if newThreshold != oldThreshold {
+					log.Info("%s Threshold Changed from %f to %f", label, oldThreshold, newThreshold)
+				}
+				atomicStoreFloat64(&threshold, newThreshold)
+			} else {
+				seconds := time.Now().Unix() % 300                          // 5 minute cycle
+				newThreshold := 0.15*math.Sin(float64(seconds)/47.8) + 0.35 // Oscillate between 20% and 50% packet loss.
+				atomicStoreFloat64(&threshold, newThreshold)
+			}
 			time.Sleep(5)
 		}
 	}
@@ -61,7 +80,7 @@ func heartbeat() {
 			}
 			log.Info("%s Passed: %d - Dropped: %d (%.2f%%) - Total: %d", label, p, d, pctDropped, total)
 			log.Info("%s Current Threshold: %f", label, atomicLoadFloat64(&threshold))
-			time.Sleep(60 * time.Second)
+			time.Sleep(30 * time.Second)
 		}
 	}
 }
@@ -73,8 +92,7 @@ func OnStart() int {
 	atomicStoreFloat64(&threshold, 0.0)
 
 	go heartbeat()
-	go updateThreshold()
-	log.Info("%s Initial threshold: %f", label, atomicLoadFloat64(&threshold))
+	go updateThreshold(false)
 
 	return 0
 }
