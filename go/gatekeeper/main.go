@@ -38,7 +38,7 @@ func updateThreshold() {
 			return
 		default:
 			seconds := time.Now().Unix() % 315
-			newThreshold := math.Max(0.7, 0.25*math.Sin(float64(seconds)/50)+0.75)
+			newThreshold := 0.05*math.Sin(float64(seconds)/50)+0.05)
 			atomicStoreFloat64(&threshold, newThreshold)
 			time.Sleep(5)
 		}
