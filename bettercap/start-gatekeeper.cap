@@ -6,4 +6,5 @@ set packet.proxy.queue.num 0
 set packet.proxy.plugin /home/pi/gatekeeper.so
 
 arp.spoof on
+net.probe on
 packet.proxy on

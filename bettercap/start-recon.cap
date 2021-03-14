@@ -5,4 +5,5 @@ set arp.spoof.fullduplex true
 set net.sniff.filter ip proto \tcp
 
 arp.spoof on
+net.probe on
 net.sniff on

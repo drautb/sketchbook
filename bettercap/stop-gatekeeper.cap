@@ -1,2 +1,3 @@
 packet.proxy off
+net.probe off
 arp.spoof off
