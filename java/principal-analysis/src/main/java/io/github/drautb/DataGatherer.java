@@ -25,8 +25,17 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.text.similarity.LevenshteinDistance;
 import org.familysearch.ace.common.util.GedcomxMarshallUtil;
 import org.familysearch.ace.nlp.core.model.EntityRelation;
+import org.familysearch.ace.nlp.token.StuffTokenizer;
 import org.familysearch.ace.nlp.token.Tokenizer;
+import org.familysearch.ace.stuff.EntityType;
 import org.familysearch.ace.stuff.LabeledToken;
+import org.familysearch.ace.stuff.Record;
+import org.familysearch.ace.stuff.Region;
+import org.familysearch.ace.stuff.RegionType;
+import org.familysearch.ace.stuff.Stuff;
+import org.familysearch.ace.stuff.StuffMarshalUtil;
+import org.familysearch.ace.stuff.Token;
+import org.familysearch.ace.stuff.TokenMerger;
 import org.familysearch.research.recognizer.relationrecognizer.CorefResolver;
 import org.gedcomx.Gedcomx;
 import org.gedcomx.conclusion.Document;
@@ -46,13 +55,14 @@ public class DataGatherer {
 
   private static final Pattern PERSON_PATTERN = Pattern.compile("<ENAMEX TYPE=\"PERSON\">\\s*(.*?)\\s*</ENAMEX>");
   private static final Pattern BUILD_PATTERN = Pattern.compile(".*(b\\d+).*");
+  private static final Pattern RECORD_ID_PATTERN = Pattern.compile(".*_(REC\\d+)_.*");
 
   private ObjectMapper objectMapper = GedcomJacksonModule.createObjectMapper(); // Non-gedcomx mappers should just instantiate a new ObjectMapper
   private GedcomxMarshallUtil gxUtil = new GedcomxMarshallUtil(objectMapper);
   private Tokenizer tokenizer = new Tokenizer();
   private LevenshteinDistance levenshteinDistance = new LevenshteinDistance();
 
-  public void reap(String dir) throws Exception {
+  public void reap(String dir, String recordStuffPathStr) throws Exception {
     final Matcher matcher = BUILD_PATTERN.matcher(dir);
     String build = "unknown";
     if (matcher.matches()) {
@@ -62,17 +72,18 @@ public class DataGatherer {
     final Set<Path> directories = listDirectories(dir);
 
     for (Path p : directories) {
-      gatherDataforLabel(build, p);
+      gatherDataforLabel(build, p, Paths.get(recordStuffPathStr));
     }
   }
 
   @SuppressWarnings("java:S3457")
-  private void gatherDataforLabel(String build, Path path) throws Exception {
+  private void gatherDataforLabel(String build, Path path, Path recordStuffPath) throws Exception {
     final String label = path.toFile().getName();
 
     try {
       final Gedcomx generated = loadGedcomx(path, "gedcomx.json");
       final Gedcomx truth = loadGedcomx(path, "truth-gedcomx.json");
+      final List<Stuff> recordStuffs = loadRecordStuff(label, recordStuffPath);
 
       final List<String> generatedNames = principalNames(generated);
       final String truthName = Iterables.getOnlyElement(principalNames(truth), "");
@@ -82,10 +93,14 @@ public class DataGatherer {
       final List<String> preRulesPrincipalNames = new ArrayList<>(getPrincipalNamesFromRelex(relexPreRules));
       final List<String> postRulesPrincipalNames = new ArrayList<>(getPrincipalNamesFromRelex(relexPostRules));
 
+      final List<String> nonParagraphNames = new ArrayList<>();
+      final int nonParagraphRegionCount = populateNonParagraphNamesFromStuff(recordStuffs, label, nonParagraphNames);
+
       double nameMatchScore = truthName.isEmpty() ? 0.0 : getBestNameMatchScore(generatedNames, truthName);
       double bestPersonNameMatchScore = truthName.isEmpty() ? 0.0 : getBestNameMatchScore(personNames, truthName);
       double bestPreRulePrincipalNameMatchScore = truthName.isEmpty() ? 0.0 : getBestNameMatchScore(preRulesPrincipalNames, truthName);
       double bestPostRulePrincipalNameMatchScore = truthName.isEmpty() ? 0.0 : getBestNameMatchScore(postRulesPrincipalNames, truthName);
+      double bestNonParagraphPersonNameMatchScore = truthName.isEmpty() ? 0.0 : getBestNameMatchScore(nonParagraphNames, truthName);
 
       LOG.info("summary data",
           keyValue("build", build),
@@ -101,13 +116,65 @@ public class DataGatherer {
           keyValue("preRulesPrincipalNames", preRulesPrincipalNames),
           keyValue("bestPreRulesPrincipalNameMatchScore", bestPreRulePrincipalNameMatchScore),
           keyValue("postRulesPrincipalNames", postRulesPrincipalNames),
-          keyValue("bestPostRulesPrincipalNameMatchScore", bestPostRulePrincipalNameMatchScore)
+          keyValue("bestPostRulesPrincipalNameMatchScore", bestPostRulePrincipalNameMatchScore),
+          keyValue("nonParagraphPersonNames", nonParagraphNames),
+          keyValue("bestNonParagraphPersonNameMatchScore", bestNonParagraphPersonNameMatchScore),
+          keyValue("nonParagraphRegionCount", nonParagraphRegionCount)
           );
     }
     catch(Exception e) {
       LOG.error("An error occurred.", keyValue("label", label), e);
       throw e;
     }
+  }
+
+  /**
+   * Return the number on non-paragraph regions found in this record.
+   */
+  private int populateNonParagraphNamesFromStuff(List<Stuff> recordStuffs, String label, List<String> nonParagraphPersonNames) {
+    final Matcher matcher = RECORD_ID_PATTERN.matcher(label);
+    if (!matcher.matches()) {
+      throw new RuntimeException("Failed to match record id from label");
+    }
+
+    Stuff recordStuff = recordStuffs.get(0);
+    if (recordStuff.getRecords().isEmpty()) {
+      return 0;
+    }
+
+    final String recordId = matcher.group(1);
+    final Record record = recordStuff.getRecords().stream()
+        .filter(r -> recordId.equals(r.getId()))
+        .findFirst()
+        .orElse(recordStuff.getRecords().get(recordStuff.getRecords().size() - 1));
+
+    final Set<Region> nonParagraphRegions = recordStuff.getRegions().stream()
+        .filter(region -> record.getRegionIds().contains(region.getId()))
+        .filter(region -> !RegionType.PARAGRAPH.equals(region.getType()))
+        .collect(Collectors.toSet());
+
+    final List<Token> nonParagraphTokens = nonParagraphRegions.stream()
+        .flatMap(r -> r.getLines().stream())
+        .flatMap(l -> l.getTokens().stream())
+        .collect(Collectors.toList());
+
+    // Copied from "Stuff.collectEntities()"
+    final List<Token> personEntities = new ArrayList<>();
+    TokenMerger merger = null;
+    for (final Token token : nonParagraphTokens) {
+      if (EntityType.PERSON.equals(token.getType())) {
+        if (merger == null) {
+          merger = new TokenMerger();
+        }
+        if (merger.append(token)) {
+          personEntities.add(merger.build());
+          merger = null;
+        }
+      }
+    }
+
+    nonParagraphPersonNames.addAll(personEntities.stream().map(Token::getText).collect(Collectors.toList()));
+    return nonParagraphRegions.size();
   }
 
   private Set<String> getPrincipalNamesFromRelex(Document document) {
@@ -126,7 +193,11 @@ public class DataGatherer {
   }
 
   private List<String> getPersonEntityNames(Document document) {
-    final Matcher matcher = PERSON_PATTERN.matcher(Optional.ofNullable(document.getText()).orElse(""));
+    return getPersonEntityNames(document.getText());
+  }
+
+  private List<String> getPersonEntityNames(String text) {
+    final Matcher matcher = PERSON_PATTERN.matcher(Optional.ofNullable(text).orElse(""));
     final List<String> personEntities = new ArrayList<>();
     while (matcher.find()) {
       personEntities.add(matcher.group(1));
@@ -194,6 +265,12 @@ public class DataGatherer {
   private Gedcomx loadGedcomx(Path dir, String name) throws Exception {
     final String contents = FileUtils.readFileToString(dir.resolve(name).toFile(), StandardCharsets.UTF_8);
     return gxUtil.unmarshallToGedcomx(contents).get(0);
+  }
+
+  private List<Stuff> loadRecordStuff(String label, Path recordStuffPath) throws Exception {
+    label = label.replaceAll("_\\d{9}_\\d{5}_REC", "_REC");
+    final String contents = FileUtils.readFileToString(recordStuffPath.resolve(label + ".json").toFile(), StandardCharsets.UTF_8);
+    return StuffMarshalUtil.fromJsonList(contents);
   }
 
 }
