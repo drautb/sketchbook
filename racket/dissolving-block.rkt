@@ -76,7 +76,7 @@
 ;; GUI stuff
 (define my-frame (new (class frame% (super-new)
                         (define/augment (on-close) (exit 0)))
-                    x  [label "Dissolving Block"]
+                      [label "Dissolving Block"]
                       [width WINDOW-WIDTH]
                       [height WINDOW-HEIGHT]
                       [min-width WINDOW-WIDTH]
