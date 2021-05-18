@@ -44,7 +44,12 @@ for asg in asg_descriptions:
     ])
   spot_count = 0
   for r in response['Reservations']:
-    spot_count += len(filter(lambda i: i['State']['Name'] == 'running', r['Instances']))
+    spot_count += len(list(filter(lambda i: i['State']['Name'] == 'running', r['Instances'])))
 
-  actual = len(filter(lambda i: i['LifecycleState'] == 'InService', asg['Instances']))
+  actual = len(list(filter(lambda i: i['LifecycleState'] == 'InService', asg['Instances'])))
   print("ASG: {}\n\tMin: {:<8}\tMax: {:<8}\tDesired: {:<8}\tActual: {:<8}\tSpot: {:<8}\n".format(asg_name, asg['MinSize'], asg['MaxSize'], asg['DesiredCapacity'], actual, spot_count))
+
+  response = autoscaling.describe_scaling_activities(AutoScalingGroupName=asg_name, IncludeDeletedGroups=True, MaxRecords=10)
+  print("Last 10 Scaling Activities:")
+  for act in response['Activities']:
+      print("{}:\n  Activity: {}\n  Cause: {}\n".format(act['StartTime'], act['Description'], act['Cause'])) 
