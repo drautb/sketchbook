@@ -5,13 +5,13 @@ import sys
 import requests
 import json
 
-GUID_LIST = sys.argv[1]
+NINE_FIVE_LIST = sys.argv[1]
 
-DOWNLOAD_ENDPOINT = "http://cogsworth.records.service.integ.us-east-1.dev.fslocal.org/transcriptions"
+DOWNLOAD_ENDPOINT = "http://dexter.records.service.integ.us-east-1.dev.fslocal.org/image/"
 
-for guid in open(GUID_LIST, 'r').read().splitlines():
-  print(guid)
-  r = requests.get(DOWNLOAD_ENDPOINT + "/" + guid)
-  r.raise_for_status()
-  with open(guid + '.json', 'w') as outfile:
-    json.dump(r.json(), outfile)
+for nine_five in open(NINE_FIVE_LIST, 'r').read().splitlines():
+    print("Downloading image stuff for " + nine_five + "...")
+    r = requests.get(DOWNLOAD_ENDPOINT + "/" + nine_five + "/image-stuff")
+    r.raise_for_status()
+    with open(nine_five + '.json', 'w') as outfile:
+        json.dump(r.json(), outfile)
