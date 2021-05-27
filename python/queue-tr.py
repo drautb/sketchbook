@@ -4,6 +4,7 @@ import os
 import sys
 import requests
 import json
+import concurrent.futures
 
 NINE_FIVE_LIST = sys.argv[1]
 
@@ -34,12 +35,28 @@ def increment_nine_five(nine_five):
     next_image = int(image) + 1
     return "%s_%05d" % (group, next_image)
 
-for line in open(NINE_FIVE_LIST, 'r'): 
-    nine_five = line.strip()
-    apid = get_apid(nine_five)
-    queue_tr(nine_five, apid)
+def queue_tr_for_nine_five(nine_five):
+    try: 
+        nine_five = nine_five.strip()
+        apid = get_apid(nine_five)
+        queue_tr(nine_five, apid)
 
-    # Queue TR for the next image too, so that the stuff viewer works.
-    nine_five = increment_nine_five(nine_five)
-    apid = get_apid(nine_five)
-    queue_tr(nine_five, apid)
+        # Queue TR for the next image too, so that the stuff viewer works.
+        next_nine_five = increment_nine_five(nine_five)
+        apid = get_apid(next_nine_five)
+        queue_tr(next_nine_five, apid)
+
+        return "Finished " + nine_five + " and " + next_nine_five
+    except Exception as e:
+        print("Error occurred: ", e)
+        return "Failed: " + nine_five
+
+
+with concurrent.futures.ThreadPoolExecutor() as executor:
+    futures = []
+    for line in open(NINE_FIVE_LIST, 'r'): 
+        futures.append(executor.submit(queue_tr_for_nine_five, nine_five=line))
+    
+    for future in concurrent.futures.as_completed(futures):
+        print(future.result())
+
