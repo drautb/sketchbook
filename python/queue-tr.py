@@ -29,7 +29,17 @@ def queue_tr(nine_five, apid):
     r = requests.post(SUBMIT_ENDPOINT, data=action, headers={"Content-Type": "application/json"})
     r.raise_for_status()
 
+def increment_nine_five(nine_five):
+    [group, image] = nine_five.split("_")
+    next_image = int(image) + 1
+    return "%s_%05d" % (group, next_image)
+
 for line in open(NINE_FIVE_LIST, 'r'): 
     nine_five = line.strip()
+    apid = get_apid(nine_five)
+    queue_tr(nine_five, apid)
+
+    # Queue TR for the next image too, so that the stuff viewer works.
+    nine_five = increment_nine_five(nine_five)
     apid = get_apid(nine_five)
     queue_tr(nine_five, apid)
