@@ -1,0 +1,399 @@
+[gd_scene load_steps=4 format=2]
+
+[ext_resource path="res://Main.gd" type="Script" id=1]
+
+[sub_resource type="StyleBoxFlat" id=1]
+bg_color = Color( 0.243137, 0.619608, 0.27451, 1 )
+
+[sub_resource type="StyleBoxFlat" id=2]
+bg_color = Color( 0.129412, 0.454902, 0.611765, 1 )
+
+[node name="Control" type="Control"]
+anchor_left = -0.000459671
+anchor_top = 0.00313802
+anchor_right = 0.804
+anchor_bottom = 0.448
+margin_left = 0.470703
+margin_top = 0.117188
+margin_right = -0.296021
+margin_bottom = 0.199982
+script = ExtResource( 1 )
+__meta__ = {
+"_edit_lock_": true,
+"_edit_use_anchors_": false
+}
+
+[node name="FileDialog" type="FileDialog" parent="."]
+margin_right = 800.0
+margin_bottom = 260.0
+rect_min_size = Vector2( 800, 260 )
+size_flags_horizontal = 3
+size_flags_vertical = 3
+popup_exclusive = true
+window_title = "Open a File"
+mode = 0
+access = 2
+current_dir = "/Users/drautb/Desktop/pt-dates-for-standards"
+current_path = "/Users/drautb/Desktop/pt-dates-for-standards/"
+
+[node name="V" type="VBoxContainer" parent="."]
+margin_left = 30.0
+margin_top = 30.0
+margin_right = 40.0
+margin_bottom = 40.0
+__meta__ = {
+"_edit_lock_": true
+}
+
+[node name="V" type="VBoxContainer" parent="V"]
+margin_right = 892.0
+margin_bottom = 244.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+__meta__ = {
+"_edit_lock_": true,
+"_edit_use_anchors_": false
+}
+
+[node name="H1" type="GridContainer" parent="V/V"]
+margin_right = 892.0
+margin_bottom = 180.0
+columns = 2
+__meta__ = {
+"_edit_lock_": true
+}
+
+[node name="ImageLabel" type="Label" parent="V/V/H1"]
+margin_right = 140.0
+margin_bottom = 14.0
+text = "Image:"
+align = 2
+
+[node name="ImageName" type="Label" parent="V/V/H1"]
+margin_left = 144.0
+margin_right = 744.0
+margin_bottom = 14.0
+
+[node name="Label" type="Label" parent="V/V/H1"]
+margin_top = 61.0
+margin_right = 140.0
+margin_bottom = 75.0
+text = "Extracted Date String:"
+__meta__ = {
+"_edit_lock_": true
+}
+
+[node name="ExtractedDate" type="TextEdit" parent="V/V/H1"]
+margin_left = 144.0
+margin_top = 18.0
+margin_right = 744.0
+margin_bottom = 118.0
+rect_min_size = Vector2( 600, 100 )
+readonly = true
+__meta__ = {
+"_edit_lock_": true
+}
+
+[node name="Label2" type="Label" parent="V/V/H1"]
+margin_top = 130.0
+margin_right = 140.0
+margin_bottom = 144.0
+text = "Corrected Date String:"
+__meta__ = {
+"_edit_lock_": true
+}
+
+[node name="ModifiedDate" type="TextEdit" parent="V/V/H1"]
+margin_left = 144.0
+margin_top = 122.0
+margin_right = 744.0
+margin_bottom = 152.0
+rect_min_size = Vector2( 0, 30 )
+draw_tabs = true
+draw_spaces = true
+__meta__ = {
+"_edit_lock_": true
+}
+
+[node name="Label3" type="Label" parent="V/V/H1"]
+margin_top = 161.0
+margin_right = 140.0
+margin_bottom = 175.0
+text = "Gedcomx Date:"
+align = 2
+__meta__ = {
+"_edit_lock_": true
+}
+
+[node name="GedcomxDate" type="LineEdit" parent="V/V/H1"]
+margin_left = 144.0
+margin_top = 156.0
+margin_right = 744.0
+margin_bottom = 180.0
+__meta__ = {
+"_edit_lock_": true
+}
+
+[node name="H2" type="HBoxContainer" parent="V/V"]
+margin_top = 184.0
+margin_right = 892.0
+margin_bottom = 220.0
+rect_min_size = Vector2( 0, 36 )
+__meta__ = {
+"_edit_lock_": true
+}
+
+[node name="IndexLabel" type="Label" parent="V/V/H2"]
+margin_top = 11.0
+margin_right = 44.0
+margin_bottom = 25.0
+text = "Index: "
+__meta__ = {
+"_edit_lock_": true
+}
+
+[node name="CurrentIndex" type="Label" parent="V/V/H2"]
+margin_left = 48.0
+margin_top = 11.0
+margin_right = 48.0
+margin_bottom = 25.0
+__meta__ = {
+"_edit_lock_": true
+}
+
+[node name="TotalLabel" type="Label" parent="V/V/H2"]
+margin_left = 52.0
+margin_top = 11.0
+margin_right = 100.0
+margin_bottom = 25.0
+rect_min_size = Vector2( 48, 0 )
+text = "Total:"
+align = 2
+__meta__ = {
+"_edit_lock_": true
+}
+
+[node name="TotalValue" type="Label" parent="V/V/H2"]
+margin_left = 104.0
+margin_top = 11.0
+margin_right = 136.0
+margin_bottom = 25.0
+text = "8133"
+__meta__ = {
+"_edit_lock_": true
+}
+
+[node name="Percent" type="Label" parent="V/V/H2"]
+margin_left = 140.0
+margin_top = 11.0
+margin_right = 188.0
+margin_bottom = 25.0
+rect_min_size = Vector2( 48, 0 )
+text = "(0%)"
+align = 2
+__meta__ = {
+"_edit_lock_": true
+}
+
+[node name="Goto" type="Label" parent="V/V/H2"]
+margin_left = 192.0
+margin_top = 11.0
+margin_right = 252.0
+margin_bottom = 25.0
+rect_min_size = Vector2( 60, 0 )
+text = "Goto:"
+align = 2
+__meta__ = {
+"_edit_lock_": true
+}
+
+[node name="GotoIndex" type="LineEdit" parent="V/V/H2"]
+margin_left = 256.0
+margin_right = 314.0
+margin_bottom = 36.0
+align = 2
+__meta__ = {
+"_edit_lock_": true
+}
+
+[node name="GoButton" type="Button" parent="V/V/H2"]
+margin_left = 318.0
+margin_right = 348.0
+margin_bottom = 36.0
+text = "Go"
+align = 2
+__meta__ = {
+"_edit_lock_": true
+}
+
+[node name="H3" type="HBoxContainer" parent="V/V"]
+margin_top = 224.0
+margin_right = 892.0
+margin_bottom = 244.0
+__meta__ = {
+"_edit_lock_": true
+}
+
+[node name="Previous" type="Button" parent="V/V/H3"]
+margin_right = 175.0
+margin_bottom = 20.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+text = "<= Previous"
+__meta__ = {
+"_edit_lock_": true
+}
+
+[node name="Save & Next" type="Button" parent="V/V/H3"]
+margin_left = 179.0
+margin_right = 354.0
+margin_bottom = 20.0
+size_flags_horizontal = 3
+text = "Save and Next =>"
+__meta__ = {
+"_edit_lock_": true
+}
+
+[node name="Next" type="Button" parent="V/V/H3"]
+margin_left = 358.0
+margin_right = 533.0
+margin_bottom = 20.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+text = "Next =>"
+__meta__ = {
+"_edit_lock_": true
+}
+
+[node name="Translate" type="Button" parent="V/V/H3"]
+margin_left = 537.0
+margin_right = 712.0
+margin_bottom = 20.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+custom_styles/normal = SubResource( 1 )
+text = "Translate"
+__meta__ = {
+"_edit_lock_": true
+}
+
+[node name="Portal" type="Button" parent="V/V/H3"]
+margin_left = 716.0
+margin_right = 892.0
+margin_bottom = 20.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+custom_styles/normal = SubResource( 2 )
+text = "Stuff Viewer"
+__meta__ = {
+"_edit_lock_": true
+}
+
+[node name="Spacer" type="Control" parent="V"]
+margin_top = 248.0
+margin_right = 892.0
+margin_bottom = 268.0
+rect_min_size = Vector2( 20, 20 )
+
+[node name="Reference" type="HBoxContainer" parent="V"]
+margin_top = 272.0
+margin_right = 892.0
+margin_bottom = 692.0
+__meta__ = {
+"_edit_lock_": true
+}
+
+[node name="RichTextLabel" type="RichTextLabel" parent="V/Reference"]
+margin_right = 220.0
+margin_bottom = 420.0
+rect_min_size = Vector2( 220, 420 )
+text = "1 – um/uma
+2 – dois/duas
+3 – três
+4 – quatro
+5 – cinco
+6 – seis
+7 – sete
+8 – oito
+9 – nove
+10 – dez
+11 – onze
+12 – doze
+13 – treze
+14 – catorze
+15 – quinze
+16 – dezesseis/dezasseis
+17 – dezessete/dezassete
+18 – dezoito
+19 – dezenove/dezanove
+20 – vinte
+30 – trinta
+40 – quarenta
+50 – cinquenta
+60 – sessenta
+70 – setenta
+80 – oitenta
+90 – noventa"
+
+[node name="RichTextLabel2" type="RichTextLabel" parent="V/Reference"]
+margin_left = 224.0
+margin_right = 444.0
+margin_bottom = 420.0
+rect_min_size = Vector2( 220, 420 )
+text = "200 – duzentos/duzentas
+300 – trezentos/trezentas
+400 – quatrocentos/quatrocentas
+500 – quinhentos/quinhentas
+600 – seiscentos/seiscentas
+700 – setecentos/setecentas
+800 – oitocentos/oitocentas
+900 – novecentos/novecentas"
+
+[node name="RichTextLabel3" type="RichTextLabel" parent="V/Reference"]
+margin_left = 448.0
+margin_right = 668.0
+margin_bottom = 420.0
+rect_min_size = Vector2( 220, 420 )
+text = "janeiro 
+fevereiro 
+março
+abril
+maio
+junho
+julho
+agosto
+setembro
+outubro
+novembro
+dezembro
+
+primeiro de
+o mês
+o ano"
+
+[node name="RichTextLabel4" type="RichTextLabel" parent="V/Reference"]
+margin_left = 672.0
+margin_right = 892.0
+margin_bottom = 420.0
+rect_min_size = Vector2( 220, 420 )
+text = "segunda-feira
+terça-feira
+quarta-feira
+quinta-feira
+sexta-feira
+sábado
+domingo
+
+o dia
+a semana
+o fim de semana
+hoje
+amanhã"
+
+[connection signal="file_selected" from="FileDialog" to="." method="_on_FileDialog_file_selected"]
+[connection signal="pressed" from="V/V/H2/GoButton" to="." method="_on_GoButton_pressed"]
+[connection signal="pressed" from="V/V/H3/Previous" to="." method="_on_Previous_pressed"]
+[connection signal="pressed" from="V/V/H3/Save & Next" to="." method="_on_Save__Next_pressed"]
+[connection signal="pressed" from="V/V/H3/Next" to="." method="_on_Next_pressed"]
+[connection signal="pressed" from="V/V/H3/Translate" to="." method="_on_Translate_pressed"]
+[connection signal="pressed" from="V/V/H3/Portal" to="." method="_on_Portal_pressed"]
