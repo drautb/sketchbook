@@ -1,22 +1,27 @@
 #!/usr/bin/env python3
 
 import boto3
-import concurrent.futures
 import os
 import sys
+import threading
 
 from botocore.config import Config
+from queue import Queue
+from threading import Lock
 
 
 prefix_file = sys.argv[1]
 bucket_name = sys.argv[2]
 
 # Increase retries for talking to ec2 metadata (for running in AWS)
-os.environ["AWS_METADATA_SERVICE_TIMEOUT"] = "5.0"
+os.environ["AWS_METADATA_SERVICE_TIMEOUT"] = "5"
 os.environ["AWS_METADATA_SERVICE_NUM_ATTEMPTS"] = "10"
 
 total_keys_processed = 0
+sentinel = None
+thread_count = os.cpu_count()
 prefixes = []
+print_and_count_lock = Lock()
 
 session = boto3.Session(profile_name = "FH011_Records_ACE_Operator")
 client_config = Config(region_name = "us-east-1")
@@ -56,45 +61,72 @@ def get_last_byte(bucket_name, key):
   return response['Body'].read(1)
 
 
-def farm_out_keys(executor, bucket_name, keys):
+def queue_objects(queue, bucket_name, prefix):
+  response = s3_client.list_objects_v2(Bucket=bucket_name,
+                                       Prefix=prefix,
+                                       MaxKeys=1000)
+  keys = [o['Key'] for o in response['Contents']]
+  for k in keys:
+    queue.put(k)
+
+  while response['IsTruncated']:
+    response = s3_client.list_objects_v2(Bucket=bucket_name,
+                                         Prefix=prefix,
+                                         MaxKeys=1000,
+                                         ContinuationToken=response['NextContinuationToken'])
+    keys = [o['Key'] for o in response['Contents']]
+    for k in keys:
+      queue.put(k)
+
+
+def add_newlines_task(queue, bucket_name):
+  global print_and_count_lock
   global total_keys_processed
-  futures = []
-  for key in keys:
-    futures.append(executor.submit(add_newline_if_necessary, bucket_name=bucket_name, key=key))
 
-  for future in concurrent.futures.as_completed(futures):
-    total_keys_processed += 1
+  thread_processed = 0
 
-  print(".", end="")
+  while True:
+    p = queue.get()
+    if p is sentinel:
+      break
 
+    if p.endswith("/"):
+      queue_objects(queue, bucket_name, p)
+    elif p.endswith(".json"):
+      add_newline_if_necessary(bucket_name, p)
+      thread_processed += 1
+      if thread_processed % 1000 == 0:
+        with print_and_count_lock:
+          total_keys_processed += 1000
+          print(".", end="", flush=True)
+    else:
+      with print_and_count_lock:
+        print("Unrecognized key: " + p)
 
-def add_newlines_to_all_files(prefix_file, bucket_name):
-  global prefixes
-  prefixes = load_prefixes(prefix_file)
+    queue.task_done()
 
-  with concurrent.futures.ThreadPoolExecutor() as executor:
-    for p in prefixes:
-      p = p.strip()
-      prefix_key_count = 0
-      response = s3_client.list_objects_v2(Bucket=bucket_name,
-                                           Prefix=p,
-                                           MaxKeys=1000)
-      keys = [o['Key'] for o in response['Contents']]
-      farm_out_keys(executor, bucket_name, keys)
-      prefix_key_count += len(keys)
-
-      while response['IsTruncated']:
-        response = s3_client.list_objects_v2(Bucket=bucket_name,
-                                             Prefix=p,
-                                             MaxKeys=1000,
-                                             ContinuationToken=response['NextContinuationToken'])
-        keys = [o['Key'] for o in response['Contents']]
-        farm_out_keys(executor, bucket_name, keys)
-        prefix_key_count += len(keys)
-
-      print("\nProcessed %d keys in prefix. (%d total so far)" % (prefix_key_count, total_keys_processed))
+  with print_and_count_lock:
+    total_keys_processed += thread_processed % 1000
+    print("Thread processed %d keys" % thread_processed)
 
 
-add_newlines_to_all_files(prefix_file, bucket_name)
+## Main logic
+prefixes = load_prefixes(prefix_file)
+prefix_queue = Queue()
+for p in prefixes:
+  p = p.strip()
+  prefix_queue.put(p)
 
-print("All done. Processed %d keys in %d prefixes" % (total_keys_processed, len(prefixes)))
+threads = [threading.Thread(target = add_newlines_task, args = (prefix_queue, bucket_name)) for n in range(thread_count)]
+for t in threads:
+  t.start()
+
+prefix_queue.join()
+for i in range(thread_count):
+  prefix_queue.put(sentinel)
+
+for t in threads:
+  t.join()
+
+with print_and_count_lock:
+  print("All done. Processed %d keys in %d prefixes" % (total_keys_processed, len(prefixes)))
