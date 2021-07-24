@@ -2,6 +2,7 @@
 
 import boto3
 import concurrent.futures
+import os
 import sys
 
 from botocore.config import Config
@@ -10,10 +11,12 @@ from botocore.config import Config
 prefix_file = sys.argv[1]
 bucket_name = sys.argv[2]
 
+# Increase retries for talking to ec2 metadata (for running in AWS)
+os.environ["AWS_METADATA_SERVICE_TIMEOUT"] = "5.0"
+os.environ["AWS_METADATA_SERVICE_NUM_ATTEMPTS"] = "10"
 
 total_keys_processed = 0
 prefixes = []
-
 
 session = boto3.Session(profile_name = "FH011_Records_ACE_Operator")
 client_config = Config(region_name = "us-east-1")
