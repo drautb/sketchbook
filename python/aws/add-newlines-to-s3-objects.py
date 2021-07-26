@@ -19,7 +19,7 @@ os.environ["AWS_METADATA_SERVICE_NUM_ATTEMPTS"] = "10"
 
 total_keys_processed = 0
 sentinel = None
-thread_count = os.cpu_count()
+thread_count = os.cpu_count() * 2
 prefixes = []
 print_and_count_lock = Lock()
 
@@ -61,22 +61,12 @@ def get_last_byte(bucket_name, key):
   return response['Body'].read(1)
 
 
-def queue_objects(queue, bucket_name, prefix):
-  response = s3_client.list_objects_v2(Bucket=bucket_name,
-                                       Prefix=prefix,
-                                       MaxKeys=1000)
-  keys = [o['Key'] for o in response['Contents']]
-  for k in keys:
-    queue.put(k)
+def print_dot(thread_processed):
+  global print_and_count_lock
 
-  while response['IsTruncated']:
-    response = s3_client.list_objects_v2(Bucket=bucket_name,
-                                         Prefix=prefix,
-                                         MaxKeys=1000,
-                                         ContinuationToken=response['NextContinuationToken'])
-    keys = [o['Key'] for o in response['Contents']]
-    for k in keys:
-      queue.put(k)
+  if thread_processed % 5000 == 0:
+    with print_and_count_lock:
+      print(".", end="", flush=True)
 
 
 def add_newlines_task(queue, bucket_name):
@@ -90,23 +80,35 @@ def add_newlines_task(queue, bucket_name):
     if p is sentinel:
       break
 
-    if p.endswith("/"):
-      queue_objects(queue, bucket_name, p)
-    elif p.endswith(".json"):
-      add_newline_if_necessary(bucket_name, p)
+    prefix_processed = 0
+    response = s3_client.list_objects_v2(Bucket=bucket_name,
+                                         Prefix=p,
+                                         MaxKeys=1000)
+    keys = [o['Key'] for o in response['Contents']]
+    for k in keys:
+      add_newline_if_necessary(bucket_name, k)
       thread_processed += 1
-      if thread_processed % 1000 == 0:
-        with print_and_count_lock:
-          total_keys_processed += 1000
-          print(".", end="", flush=True)
-    else:
-      with print_and_count_lock:
-        print("Unrecognized key: " + p)
+      prefix_processed += 1
+      print_dot(thread_processed)
+
+    while response['IsTruncated']:
+      response = s3_client.list_objects_v2(Bucket=bucket_name,
+                                           Prefix=p,
+                                           MaxKeys=1000,
+                                           ContinuationToken=response['NextContinuationToken'])
+      keys = [o['Key'] for o in response['Contents']]
+      for k in keys:
+        add_newline_if_necessary(bucket_name, k)
+        thread_processed += 1
+        prefix_processed += 1
+        print_dot(thread_processed)
+
+    with print_and_count_lock:
+      total_keys_processed += prefix_processed
 
     queue.task_done()
 
   with print_and_count_lock:
-    total_keys_processed += thread_processed % 1000
     print("Thread processed %d keys" % thread_processed)
 
 
