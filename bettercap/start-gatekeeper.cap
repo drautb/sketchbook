@@ -1,4 +1,4 @@
-set arp.spoof.targets 192.168.0.105
+set arp.spoof.targets a6:f6:e7:d1:95:b0,4c:66:41:1e:5a:bb
 set arp.spoof.fullduplex true
 
 set packet.proxy.chain FORWARD
