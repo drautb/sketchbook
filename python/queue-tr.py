@@ -7,16 +7,17 @@ import json
 import concurrent.futures
 
 NINE_FIVE_LIST = sys.argv[1]
+PROPERTIES = sys.argv[2]
 
 APID_ENDPOINT = "http://rms.records.service.prod.us-east-1.prod.fslocal.org/artifact/"
 SUBMIT_ENDPOINT = "http://cogsworth.records.service.integ.us-east-1.dev.fslocal.org/actions"
 
 def build_action(nine_five, apid):
     return {
-        "@type": "text-recognition",
+        "@type": "RecognizeAction",
         "input": apid,
         "s3OutputFile": "data/pipeline/" + nine_five[:9] + "/image-stuff/" + nine_five + ".xml",
-        "modelProperties": "default-pt"
+        "modelProperties": PROPERTIES
     }
 
 def get_apid(nine_five):
