@@ -45,3 +45,6 @@ references.json
 cdk.out
 
 *.so
+
+Cargo.lock
+
