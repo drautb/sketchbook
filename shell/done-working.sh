@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -e
+set -x
 
 timew stop
 ~/GitHub/drautb/office-status-light/update-status.sh "done"
