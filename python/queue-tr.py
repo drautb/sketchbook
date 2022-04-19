@@ -8,9 +8,11 @@ import concurrent.futures
 
 NINE_FIVE_LIST = sys.argv[1]
 PROPERTIES = sys.argv[2]
+INCLUDE_NEXT_IMAGE = json.loads(sys.argv[3].lower())
 
 APID_ENDPOINT = "http://rms.records.service.prod.us-east-1.prod.fslocal.org/artifact/"
 SUBMIT_ENDPOINT = "http://cogsworth.records.service.integ.us-east-1.dev.fslocal.org/actions"
+
 
 def build_action(nine_five, apid):
     return {
@@ -42,16 +44,18 @@ def queue_tr_for_nine_five(nine_five):
         apid = get_apid(nine_five)
         queue_tr(nine_five, apid)
 
-        # Queue TR for the next image too, so that the stuff viewer works.
-        next_nine_five = increment_nine_five(nine_five)
-        apid = get_apid(next_nine_five)
-        queue_tr(next_nine_five, apid)
+        if INCLUDE_NEXT_IMAGE:
+            # Queue TR for the next image too, so that the stuff viewer works.
+            next_nine_five = increment_nine_five(nine_five)
+            apid = get_apid(next_nine_five)
+            queue_tr(next_nine_five, apid)
+            return "Finished " + nine_five + " and " + next_nine_five
+        else:
+            return "Finished " + nine_five
 
-        return "Finished " + nine_five + " and " + next_nine_five
     except Exception as e:
         print("Error occurred: ", e)
         return "Failed: " + nine_five
-
 
 with concurrent.futures.ThreadPoolExecutor() as executor:
     futures = []
@@ -60,4 +64,3 @@ with concurrent.futures.ThreadPoolExecutor() as executor:
     
     for future in concurrent.futures.as_completed(futures):
         print(future.result())
-
