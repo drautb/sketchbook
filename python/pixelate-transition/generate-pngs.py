@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 
 # Generates a sequence of PNG files that can be used as a mask to make a dissovling transition.
+#
+# Convert to video with ffmpeg like so:
+#
+# ffmpeg -framerate 60 -i frame%03d.png -c:v libx264 -vf fps=60 -pix_fmt yuv420p output.mp4
 
 import math
 import numpy as np
