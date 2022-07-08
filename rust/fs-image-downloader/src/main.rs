@@ -38,7 +38,7 @@ struct Arguments {
 
 static EOW: &str = "EOW";
 
-static DAS_BASE_URL: &str = "http://dascloud.storage.records.service.prod.us-east-1.prod.fslocal.org/das/v2/";
+static DAS_BASE_URL: &str = "http://dascloud.storage.records.service.prod.us-east-1.prod.fslocal.org/das/v2";
 static RMS_BASE_URL: &str = "http://rms.records.service.prod.us-east-1.prod.fslocal.org/";
 
 fn main() {
@@ -147,7 +147,8 @@ fn handle_image(image: &str, client: &Client, args: &Arguments) {
 }
 
 fn get_apid_for_95(dgs95: &str, client: &Client) -> Option<String> {
-    let result = client.get(format!("{}/dgs:{}/name?namespace=apid", DAS_BASE_URL, dgs95)).send();
+    let url = format!("{}/dgs:{}/name?namespace=apid", DAS_BASE_URL, dgs95);
+    let result = client.get(url).send();
 
     return match result {
         Ok(response) =>

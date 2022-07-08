@@ -15,8 +15,10 @@ def build_action(nine_five, apid):
     return {
         "@type": "RecognizeAction",
         "input": apid,
+        "s3AletheiaFileInput": "data/pipeline/" + nine_five[:9] + "/image-fields/" + nine_five + ".xml",
         "s3OutputFile": "data/pipeline/" + nine_five[:9] + "/image-stuff/" + nine_five + ".xml",
-        "modelProperties": "default-" + LANG
+        "modelProperties": "default-" + LANG,
+        "recordType": "http://gedcomx.org/Birth"
     }
 
 def get_apid(nine_five):
@@ -27,7 +29,10 @@ def get_apid(nine_five):
 def queue_tr(nine_five, apid):
     print("Queueing text recognition for " + nine_five + " (" + apid + ")")
     action = json.dumps(build_action(nine_five, apid))
-    r = requests.post(SUBMIT_ENDPOINT, data=action, headers={"Content-Type": "application/json"})
+    r = requests.post(SUBMIT_ENDPOINT,
+        data=action,
+        headers={"Content-Type": "application/json"},
+        params={"priority": "true"})
     r.raise_for_status()
 
 apid = get_apid(NINE_FIVE)
