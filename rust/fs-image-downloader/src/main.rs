@@ -23,8 +23,12 @@ struct Arguments {
     output_directory: std::path::PathBuf,
 
     /// File containing a list of images to download.
-    #[clap(short, long, parse(from_os_str), conflicts_with="images")]
+    #[clap(short, long, parse(from_os_str), conflicts_with_all=&["images", "group"])]
     image_list: Option<std::path::PathBuf>,
+
+    /// Group name for which to download all images.
+    #[clap(short, long, conflicts_with_all=&["image_list", "images"])]
+    groups: Vec<String>,
 
     /// Image identifiers. Valid formats are DGS 9_5s, natural group names followed by 5 digit image numbers, and image APIDs.
     ///
@@ -40,6 +44,7 @@ static EOW: &str = "EOW";
 
 static DAS_BASE_URL: &str = "http://dascloud.storage.records.service.prod.us-east-1.prod.fslocal.org/das/v2";
 static RMS_BASE_URL: &str = "http://rms.records.service.prod.us-east-1.prod.fslocal.org/";
+static RMS_GROUP_BASE_URL: &str = "http://group-service.rms.records.service.prod.us-east-1.prod.fslocal.org/";
 
 fn main() {
     let session_id = env::var("FS_SESSION_ID").expect("No session id found! Make sure the FS_SESSION_ID environment variable is set.");
@@ -72,6 +77,17 @@ fn main() {
 
     for image in args.images.iter() {
         tx.send(String::from(image)).unwrap();
+    }
+
+    for group in args.groups.iter() {
+        match get_group_images(group, &client) {
+            Some(image_list) => {
+                for image in image_list {
+                    tx.send(String::from(image)).unwrap();
+                }
+            },
+            None => ()
+        }
     }
 
     match args.image_list {
@@ -165,6 +181,14 @@ fn get_apid_for_95(dgs95: &str, client: &Client) -> Option<String> {
 }
 
 fn get_apid_for_natural_group_image(group_id: &str, image_number: usize, client: &Client) -> Option<String> {
+    let group_children = get_group_images_using_id(group_id, client);
+    return match group_children {
+        Some(apid_list) => Some(apid_list.get(image_number - 1).unwrap().to_string()),
+        None => None,
+    };
+}
+
+fn get_group_images_using_id(group_id: &str, client: &Client) -> Option<Vec<String>> {
     let result = client.get(format!("{}/artifact/group/{}/children", RMS_BASE_URL, group_id)).send();
 
     return match result {
@@ -172,11 +196,39 @@ fn get_apid_for_natural_group_image(group_id: &str, image_number: usize, client:
             match response.status() {
                 reqwest::StatusCode::OK => {
                     let apid_list: Vec<String> = response.json().unwrap();
-                    let apid = apid_list.get(image_number - 1).unwrap();
-                    return Some(String::from(apid));
+                    return Some(apid_list);
                 },
                 code => {
                     println!("Unexpected response from RMS children endpoint for {}: {}", group_id, code);
+                    None
+                },
+            },
+
+        Err(_) => None,
+    };
+}
+
+fn get_group_images(group: &str, client: &Client) -> Option<Vec<String>> {
+    if group.starts_with("TH-") {
+        return get_group_images_using_id(group, &client);
+    } else {
+        let maybe_group_id = get_group_id(group, client);
+        return match maybe_group_id {
+            Some(group_id) => get_group_images_using_id(&group_id, &client),
+            None => None,
+        }
+    }
+}
+
+fn get_group_id(group: &str, client: &Client) -> Option<String> {
+    let result = client.get(format!("{}/group/{}/apid", RMS_GROUP_BASE_URL, group)).send();
+
+    return match result {
+        Ok(response) =>
+            match response.status() {
+                reqwest::StatusCode::OK => Some(response.text().unwrap()),
+                code => {
+                    println!("Unexpected response from group id endpoint for {}: {}", group, code);
                     None
                 },
             },
