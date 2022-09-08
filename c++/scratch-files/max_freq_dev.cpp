@@ -1,0 +1,96 @@
+#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+
+#include <doctest.h>
+
+#include <bits/stdc++.h>
+
+using namespace std;
+
+void increase_frequency(unordered_map<char, int> &frequencies, char c) {
+  if (frequencies.find(c) == frequencies.end()) {
+    frequencies[c] = 1;
+  } else {
+    frequencies[c] += 1;
+  }
+}
+
+int freq_dev(unordered_map<char, int> &frequencies) {
+  uint32_t min_freq = 0 - 1;
+  uint32_t max_freq = 0;
+  for (auto it = frequencies.begin(); it != frequencies.end(); it++) {
+    uint32_t freq = it->second;
+    if (freq > max_freq) {
+      max_freq = freq;
+    }
+    if (freq < min_freq) {
+      min_freq = freq;
+    }
+  }
+  return max_freq - min_freq;
+}
+
+void print_map(unordered_map<char, int> &map) {
+  for (const auto &[key, value] : map) {
+    cout << key << ": " << value << ", ";
+  }
+  cout << endl;
+}
+
+int max_freq_dev(string str) {
+  auto max_freq_dev_val = 0;
+  unordered_map<char, int> frequencies;
+  frequencies.reserve(26);
+
+  for (uint64_t l = 0; l < str.size(); l++) {
+    frequencies.clear();
+    for (uint64_t r = l; r < str.size(); r++) {
+      // cout << str.substr(l, r - l + 1) << endl;
+      increase_frequency(frequencies, str[r]);
+
+      // print_map(frequencies);
+
+      auto freq_dev_val = freq_dev(frequencies);
+      if (freq_dev_val > max_freq_dev_val) {
+        max_freq_dev_val = freq_dev_val;
+      }
+    }
+  }
+
+  return max_freq_dev_val;
+}
+
+TEST_CASE("increase_frequency") {
+  unordered_map<char, int> frequencies;
+  increase_frequency(frequencies, 'a');
+
+  CHECK(frequencies['a'] == 1);
+
+  increase_frequency(frequencies, 'a');
+
+  CHECK(frequencies['a'] == 2);
+}
+
+TEST_CASE("freq_dev") {
+  unordered_map<char, int> frequencies = {{'a', 5}};
+
+  CHECK(freq_dev(frequencies) == 0);
+
+  frequencies = {{'a', 5}, {'b', 3}, {'c', 1}};
+
+  CHECK(freq_dev(frequencies) == 4);
+}
+
+// TODO: Benchmark the long case
+// End iteration early if no longer freq dev is possible
+// min/max heap for frequencies?
+// How would I profile this?
+
+TEST_CASE("max_freq_dev") {
+  CHECK(max_freq_dev("abcde") == 0);
+  CHECK(max_freq_dev("aaaaa") == 0);
+  CHECK(max_freq_dev("aab") == 1);
+  CHECK(max_freq_dev("abababbbb") == 4);
+  CHECK(max_freq_dev("abcdefghijklmnopqrstuvwxyz") == 0);
+  CHECK(max_freq_dev("abcabcabcabcabbbbbbbbbbbbaaa") == 12);
+  CHECK(max_freq_dev("d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb825570d8dc200d81af105068edfff1cb82557") == 800);
+}
