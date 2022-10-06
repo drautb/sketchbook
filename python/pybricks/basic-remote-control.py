@@ -31,6 +31,7 @@ while True:
 
     left_motor = motor_a if current_motors_ab else motor_c
     right_motor = motor_b if current_motors_ab else motor_d
+
     if Button.LEFT_PLUS in pressed:
         left_motor.dc(80)
     elif Button.LEFT_MINUS in pressed:

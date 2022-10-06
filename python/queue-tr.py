@@ -9,9 +9,10 @@ import concurrent.futures
 NINE_FIVE_LIST = sys.argv[1]
 PROPERTIES = sys.argv[2]
 INCLUDE_NEXT_IMAGE = json.loads(sys.argv[3].lower())
+SESSION_ID = sys.argv[4]
 
 APID_ENDPOINT = "http://rms.records.service.prod.us-east-1.prod.fslocal.org/artifact/"
-SUBMIT_ENDPOINT = "http://cogsworth.records.service.integ.us-east-1.dev.fslocal.org/actions"
+SUBMIT_ENDPOINT = "http://cogsworth.records.service.prod.us-east-1.prod.fslocal.org/actions"
 
 
 def build_action(nine_five, apid):
@@ -31,7 +32,7 @@ def get_apid(nine_five):
 def queue_tr(nine_five, apid):
     print("Queueing text recognition for " + nine_five + " (" + apid + ")")
     action = json.dumps(build_action(nine_five, apid))
-    r = requests.post(SUBMIT_ENDPOINT, data=action, headers={"Content-Type": "application/json"})
+    r = requests.post(SUBMIT_ENDPOINT, data=action, headers={"Content-Type": "application/json", "Authorization": f"Bearer {SESSION_ID}"})
     r.raise_for_status()
 
 def increment_nine_five(nine_five):
