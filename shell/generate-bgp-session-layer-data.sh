@@ -10,6 +10,7 @@ interfaces=(
   b-r1@bond-ba-1-1
   b-r1@bond-ba-1-2
   b-r1@bond-bb-1-2
+  b-r2@bond-ba-2-2
   b-r2@bond-bb-2-1
   b-r2@bond-bc-2-2
   c-r1@bond-ca-1-2
@@ -43,7 +44,7 @@ for i in "${interfaces[@]}"; do
   for proto in 4 6; do
     < "$file" jq --arg device "$device" --arg interface "$interface" --arg proto "$proto" '.allUp.layerItems += 
     [{
-      "layerItemId": "\($device)@\($interface)",
+      "layerItemId": "\($device)@\($interface)@ipv\($proto)",
       "layerName": "ipte-telemetry-bgp-peer-status",
       "timestamp": 1584056267597,
       "layerItemData": {
