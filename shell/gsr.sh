@@ -18,7 +18,7 @@ while IFS='' read -r -d '' d; do
 
   gs_long="$(git status)"
   if [[ "$gs_long" =~ "Your branch is up to date with" ]]; then
-    output="$output - Up to date"
+    output="$output"
   elif [[ "$gs_long" =~ "Your branch is behind" ]]; then
     output="$output - \033[33mBEHIND by "$(echo "$gs_long" | tr -dc '0-9')"\033[0m"
   elif [[ "$gs_long" =~ "Your branch is ahead" ]]; then
