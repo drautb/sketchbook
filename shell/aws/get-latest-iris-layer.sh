@@ -18,6 +18,6 @@ aws s3 cp --quiet "s3://ariadne-iris-$stage-$site/$prefix/$layer.json" \
   "$tmpfile" \
   --profile "$site"
 
-/usr/bin/cat "$tmpfile"
+/bin/cat "$tmpfile"
 
 
