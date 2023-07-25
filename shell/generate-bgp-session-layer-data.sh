@@ -23,6 +23,7 @@ while read i; do
       "layerName": "ipte-telemetry-bgp-peer-status",
       "timestamp": 1584056267597,
       "layerItemData": {
+        "@class": "com.amazonaws.services.bodca.local.producer.layeritemdata.TelemetryLayerItemData",
         "deviceName": "\($device)",
         "interfaceName": "\($interface)",
         "metricName": "bgpPeerSessionStatusIpv\($proto)",
