@@ -152,15 +152,15 @@ fn load_instruction(opcode: u8) -> Instruction {
         0x79 => Instruction::ADC(opcode, AddressMode::AIY),
         0x7D => Instruction::ADC(opcode, AddressMode::AIX),
 
-        0x21 => Instruction::AND(opcode, AddressMode::ZPII),
-        0x25 => Instruction::AND(opcode, AddressMode::ZP),
         0x29 => Instruction::AND(opcode, AddressMode::IMMEDIATE),
         0x2D => Instruction::AND(opcode, AddressMode::ABS),
-        0x31 => Instruction::AND(opcode, AddressMode::ZPIIY),
-        0x32 => Instruction::AND(opcode, AddressMode::ZPI),
-        0x35 => Instruction::AND(opcode, AddressMode::ZPIX),
-        0x39 => Instruction::AND(opcode, AddressMode::AIY),
         0x3D => Instruction::AND(opcode, AddressMode::AIX),
+        0x39 => Instruction::AND(opcode, AddressMode::AIY),
+        0x25 => Instruction::AND(opcode, AddressMode::ZP),
+        0x35 => Instruction::AND(opcode, AddressMode::ZPIX),
+        0x32 => Instruction::AND(opcode, AddressMode::ZPI),
+        0x21 => Instruction::AND(opcode, AddressMode::ZPII),
+        0x31 => Instruction::AND(opcode, AddressMode::ZPIIY),
 
         0x06 => Instruction::ASL(opcode, AddressMode::ZP),
         0x0A => Instruction::ASL(opcode, AddressMode::ACC),
@@ -435,7 +435,7 @@ impl fmt::Debug for Cpu {
             .field("x", &self.x)
             .field("y", &self.y)
             .field("p", &format_args!("{:08b}", self.p))
-            .field("pc", &self.pc)
+            .field("pc", &format_args!("{:#06X}", self.pc))
             .field("s", &self.s)
             .finish()
     }
@@ -511,34 +511,98 @@ impl Cpu {
         self.s = 0;
     }
 
-    pub fn step<M, R>(&mut self, mem: &mut M, rom: &R)
+    // TODO: PC increments map to address modes - extract this to a function
+    // TODO: Nest matches to avoid repeating logic for the same instruction in diff modes
+
+    pub fn step<M, R>(&mut self, rom: &R, mem: &mut M)
     where
-        M: IndexMut<usize, Output = u8>,
-        R: Index<usize, Output = u8>,
+    R: Index<usize, Output = u8>,
+    M: IndexMut<usize, Output = u8>,
     {
         let opcode = rom[self.pc];
         let instruction = load_instruction(opcode);
         self.ir = opcode;
         match instruction {
+            Instruction::AND(_, AddressMode::IMMEDIATE) => {
+                self.a &= self.one_byte_operand(rom);
+                self.update_pnz(self.a);
+                self.pc += 2;
+            }
+            Instruction::AND(_, AddressMode::ABS) => {
+                self.a &= self.deref_abs(rom, mem);
+                self.update_pnz(self.a);
+                self.pc += 3;
+            }
+            Instruction::AND(_, AddressMode::AIX) => {
+                self.a &= self.deref_aix(rom, mem);
+                self.update_pnz(self.a);
+                self.pc += 3;
+            }
+            Instruction::AND(_, AddressMode::AIY) => {
+                self.a &= self.deref_aiy(rom, mem);
+                self.update_pnz(self.a);
+                self.pc += 3;
+            }
+            Instruction::AND(_, AddressMode::ZP) => {
+                self.a &= self.deref_zp(rom, mem);
+                self.update_pnz(self.a);
+                self.pc += 2;
+            }
+            Instruction::AND(_, AddressMode::ZPIX) => {
+                self.a &= self.deref_zpix(rom, mem);
+                self.update_pnz(self.a);
+                self.pc += 2;
+            }
+            Instruction::AND(_, AddressMode::ZPI) => {
+                self.a &= self.deref_zpi(rom, mem);
+                self.update_pnz(self.a);
+                self.pc += 2;
+            }
+            Instruction::AND(_, AddressMode::ZPII) => {
+                self.a &= self.deref_zpii(rom, mem);
+                self.update_pnz(self.a);
+                self.pc += 2;
+            }
+            Instruction::AND(_, AddressMode::ZPIIY) => {
+                self.a &= self.deref_zpiiy(rom, mem);
+                self.update_pnz(self.a);
+                self.pc += 2;
+            }
+
             Instruction::INX(_) => {
                 self.x = inc_wrap(self.x);
-                self.update_alu_status(self.x);
+                self.update_pnz(self.x);
                 self.pc += 1;
             }
 
             Instruction::INY(_) => {
                 self.y = inc_wrap(self.y);
-                self.update_alu_status(self.y);
+                self.update_pnz(self.y);
                 self.pc += 1;
             }
 
             Instruction::JMP(_, AddressMode::ABS) => {
-                let new_pc = self.get_pc_plus_2(rom);
+                let new_pc = self.two_byte_operand(rom);
                 self.pc = new_pc as usize;
             }
 
+            Instruction::JMP(_, AddressMode::AI) => {
+                let new_pc_addr = self.two_byte_operand(rom);
+                let new_pcl: u16 = mem[new_pc_addr as usize].into();
+                let new_pch: u16 = mem[(new_pc_addr + 1) as usize].into();
+                self.pc = ((new_pch << 8) | new_pcl) as usize;
+            }
+
+            Instruction::JMP(_, AddressMode::AII) => {
+                let new_pc_addr: u16 = self.two_byte_operand(rom) + self.x as u16;
+                let new_pcl: u16 = mem[new_pc_addr as usize].into();
+                let new_pch: u16 = mem[(new_pc_addr + 1) as usize].into();
+
+                self.pc = ((new_pch << 8) | new_pcl) as usize;
+            }
+
             Instruction::LDA(_, AddressMode::IMMEDIATE) => {
-                self.a = rom[self.pc + 1];
+                self.a = self.one_byte_operand(rom);
                 self.pc += 2;
             }
 
@@ -547,7 +611,7 @@ impl Cpu {
             }
 
             Instruction::STA(_, AddressMode::ABS) => {
-                let addr = self.get_pc_plus_2(rom);
+                let addr = self.two_byte_operand(rom);
                 mem[addr as usize] = self.a;
                 self.pc += 3;
             }
@@ -559,7 +623,105 @@ impl Cpu {
         }
     }
 
-    fn update_alu_status(&mut self, value: u8) {
+    fn one_byte_operand<R>(&self, rom: &R) -> u8
+    where
+        R: Index<usize, Output = u8>,
+    {
+        rom[self.pc + 1]
+    }
+
+    fn two_byte_operand<R>(&self, rom: &R) -> u16
+    where
+        R: Index<usize, Output = u8>,
+    {
+        let op_l: u16 = rom[self.pc + 1].into();
+        let op_h: u16 = rom[self.pc + 2].into();
+        (op_h << 8) | op_l
+    }
+
+    fn deref_abs<R, M>(&mut self, rom: &R, mem: &mut M) -> u8
+    where
+        R: Index<usize, Output = u8>,
+        M: IndexMut<usize, Output = u8>,
+    {
+        mem[self.two_byte_operand(rom) as usize]
+    }
+
+    fn deref_aix<R, M>(&mut self, rom: &R, mem: &mut M) -> u8
+    where
+        R: Index<usize, Output = u8>,
+        M: IndexMut<usize, Output = u8>,
+    {
+        mem[(self.two_byte_operand(rom) + self.x as u16) as usize]
+    }
+
+    fn deref_aiy<R, M>(&mut self, rom: &R, mem: &mut M) -> u8
+    where
+        R: Index<usize, Output = u8>,
+        M: IndexMut<usize, Output = u8>,
+    {
+        mem[(self.two_byte_operand(rom) + self.y as u16) as usize]
+    }
+
+    fn deref_zp<R, M>(&mut self, rom: &R, mem: &mut M) -> u8
+    where
+        R: Index<usize, Output = u8>,
+        M: IndexMut<usize, Output = u8>,
+    {
+        mem[self.one_byte_operand(rom) as usize]
+    }
+
+    fn deref_zpix<R, M>(&mut self, rom: &R, mem: &mut M) -> u8
+    where
+        R: Index<usize, Output = u8>,
+        M: IndexMut<usize, Output = u8>,
+    {
+        mem[(self.one_byte_operand(rom) + self.x) as usize]
+    }
+
+    fn deref_zpi<R, M>(&mut self, rom: &R, mem: &mut M) -> u8
+    where
+        R: Index<usize, Output = u8>,
+        M: IndexMut<usize, Output = u8>,
+    {
+        let indirect_address = self.one_byte_operand(rom);
+        let operand_address_l: u16 = mem[indirect_address as usize].into();
+        let operand_address_h: u16 = mem[(indirect_address + 1) as usize].into();
+        let operand_address: u16 = (operand_address_h << 8) | operand_address_l;
+        mem[operand_address as usize]
+    }
+
+    fn deref_zpii<R, M>(&mut self, rom: &R, mem: &mut M) -> u8
+    where
+        R: Index<usize, Output = u8>,
+        M: IndexMut<usize, Output = u8>,
+    {
+        let indirect_address = self.one_byte_operand(rom) + self.x;
+        let operand_address_l: u16 = mem[indirect_address as usize].into();
+        let operand_address_h: u16 = mem[(indirect_address + 1) as usize].into();
+        let operand_address: u16 = (operand_address_h << 8) | operand_address_l;
+        mem[operand_address as usize]
+    }
+
+    fn deref_zpiiy<R, M>(&mut self, rom: &R, mem: &mut M) -> u8
+    where
+        R: Index<usize, Output = u8>,
+        M: IndexMut<usize, Output = u8>,
+    {
+        // Deref the zero page pointer
+        let zp = self.one_byte_operand(rom);
+        let indirect_base_l: u16 = mem[zp as usize].into();
+        let indirect_base_h: u16 = mem[(zp + 1) as usize].into();
+        let indirect_base = (indirect_base_h << 8) | indirect_base_l;
+
+        // Add y to the address found
+        let indirect = indirect_base + self.y as u16;
+
+        // Deref new address to get operand
+        mem[indirect as usize]
+    }
+
+    fn update_pnz(&mut self, value: u8) {
         self.p = (PN_MASK & value) | (!PN_MASK & self.p);
         if value == 0 {
             self.p |= PZ_MASK;
@@ -568,14 +730,6 @@ impl Cpu {
         }
     }
 
-    fn get_pc_plus_2<R>(&mut self, rom: &R) -> u16
-    where
-        R: Index<usize, Output = u8>,
-    {
-        let pcl: u16 = rom[self.pc + 1].into();
-        let pch: u16 = rom[self.pc + 2].into();
-        (pch << 8) | pcl
-    }
 }
 
 #[cfg(test)]
@@ -603,6 +757,253 @@ mod tests {
         assert_eq!(cpu, Cpu::new());
     }
 
+    mod and_tests {
+        use super::*;
+
+        #[test]
+        fn and_immediate() {
+            let (mut cpu, mut mem) = setup();
+            cpu.a = 0b00111100;
+            let rom = vec![0x29, 0b00001111];
+
+            cpu.step(&rom, &mut mem);
+
+            assert_eq!(
+                cpu,
+                Cpu {
+                    ir: 0x29,
+                    pc: 2,
+                    a: 0b00001100,
+                    ..Cpu::new()
+                }
+            )
+        }
+
+        #[test]
+        fn and_immediate_pn() {
+            let (mut cpu, mut mem) = setup();
+            cpu.a = 0b10000000;
+            let rom = vec![0x29, 0b10001111];
+
+            cpu.step(&rom, &mut mem);
+
+            assert_eq!(
+                cpu,
+                Cpu {
+                    ir: 0x29,
+                    pc: 2,
+                    a: 0b10000000,
+                    p: 0b10000000,
+                    ..Cpu::new()
+                }
+            )
+        }
+
+        #[test]
+        fn and_immediate_pz() {
+            let (mut cpu, mut mem) = setup();
+            cpu.a = 0;
+            let rom = vec![0x29, 0xFF];
+
+            cpu.step(&rom, &mut mem);
+
+            assert_eq!(
+                cpu,
+                Cpu {
+                    ir: 0x29,
+                    pc: 2,
+                    a: 0,
+                    p: 0b00000010,
+                    ..Cpu::new()
+                }
+            )
+        }
+
+        #[test]
+        fn and_abs() {
+            let (mut cpu, mut mem) = setup();
+            cpu.a = 0b10001111;
+            mem[0xABCD] = 0b10111100;
+            let rom = vec![0x2D, 0xCD, 0xAB];
+
+            cpu.step(&rom, &mut mem);
+
+            assert_eq!(
+                cpu,
+                Cpu {
+                    ir: 0x2D,
+                    pc: 3,
+                    a: 0b10001100,
+                    p: 0b10000000,
+                    ..Cpu::new()
+                }
+            )
+        }
+
+        #[test]
+        fn and_aix() {
+            let (mut cpu, mut mem) = setup();
+            cpu.a = 0b10001111;
+            cpu.x = 10;
+            mem[0xABCA] = 0b10111100;
+            let rom = vec![0x3D, 0xC0, 0xAB];
+
+            cpu.step(&rom, &mut mem);
+
+            assert_eq!(
+                cpu,
+                Cpu {
+                    ir: 0x3D,
+                    pc: 3,
+                    a: 0b10001100,
+                    x: 10,
+                    p: 0b10000000,
+                    ..Cpu::new()
+                }
+            )
+        }
+
+        #[test]
+        fn and_aiy() {
+            let (mut cpu, mut mem) = setup();
+            cpu.a = 0b10001111;
+            cpu.y = 10;
+            mem[0xABCA] = 0b10111100;
+            let rom = vec![0x39, 0xC0, 0xAB];
+
+            cpu.step(&rom, &mut mem);
+
+            assert_eq!(
+                cpu,
+                Cpu {
+                    ir: 0x39,
+                    pc: 3,
+                    a: 0b10001100,
+                    y: 10,
+                    p: 0b10000000,
+                    ..Cpu::new()
+                }
+            )
+        }
+
+        #[test]
+        fn and_zp() {
+            let (mut cpu, mut mem) = setup();
+            cpu.a = 0b10001111;
+            mem[0x00CD] = 0b10111100;
+            let rom = vec![0x25, 0xCD];
+
+            cpu.step(&rom, &mut mem);
+
+            assert_eq!(
+                cpu,
+                Cpu {
+                    ir: 0x25,
+                    pc: 2,
+                    a: 0b10001100,
+                    p: 0b10000000,
+                    ..Cpu::new()
+                }
+            )
+        }
+
+        #[test]
+        fn and_zpix() {
+            let (mut cpu, mut mem) = setup();
+            cpu.a = 0b10001111;
+            cpu.x = 10;
+            mem[0x00CA] = 0b10111100;
+            let rom = vec![0x35, 0xC0];
+
+            cpu.step(&rom, &mut mem);
+
+            assert_eq!(
+                cpu,
+                Cpu {
+                    ir: 0x35,
+                    pc: 2,
+                    a: 0b10001100,
+                    x: 10,
+                    p: 0b10000000,
+                    ..Cpu::new()
+                }
+            )
+        }
+
+        #[test]
+        fn and_zpi() {
+            let (mut cpu, mut mem) = setup();
+            cpu.a = 0b10001111;
+            mem[0x00CD] = 0x57;
+            mem[0x00CE] = 0x43;
+            mem[0x4357] = 0b10111100;
+            let rom = vec![0x32, 0xCD];
+
+            cpu.step(&rom, &mut mem);
+
+            assert_eq!(
+                cpu,
+                Cpu {
+                    ir: 0x32,
+                    pc: 2,
+                    a: 0b10001100,
+                    p: 0b10000000,
+                    ..Cpu::new()
+                }
+            )
+        }
+
+        #[test]
+        fn and_zpii() {
+            let (mut cpu, mut mem) = setup();
+            cpu.a = 0b10001111;
+            cpu.x = 10;
+            mem[0x00CA] = 0x57;
+            mem[0x00CB] = 0x43;
+            mem[0x4357] = 0b10111100;
+            let rom = vec![0x21, 0xC0];
+
+            cpu.step(&rom, &mut mem);
+
+            assert_eq!(
+                cpu,
+                Cpu {
+                    ir: 0x21,
+                    pc: 2,
+                    a: 0b10001100,
+                    x: 10,
+                    p: 0b10000000,
+                    ..Cpu::new()
+                }
+            )
+        }
+
+        #[test]
+        fn and_zpiiy() {
+            let (mut cpu, mut mem) = setup();
+            cpu.a = 0b10001111;
+            cpu.y = 10;
+            mem[0x00C0] = 0x00;
+            mem[0x00C1] = 0xFF;
+            mem[0xFF0A] = 0b10111100;
+            let rom = vec![0x31, 0xC0];
+
+            cpu.step(&rom, &mut mem);
+
+            assert_eq!(
+                cpu,
+                Cpu {
+                    ir: 0x31,
+                    pc: 2,
+                    a: 0b10001100,
+                    y: 10,
+                    p: 0b10000000,
+                    ..Cpu::new()
+                }
+            )
+        }
+    }
+
     mod inc_tests {
         use super::*;
 
@@ -612,7 +1013,7 @@ mod tests {
             let rom = vec![0xE8];
             cpu.x = 41;
 
-            cpu.step(&mut mem, &rom);
+            cpu.step(&rom, &mut mem);
 
             assert_eq!(
                 cpu,
@@ -631,7 +1032,7 @@ mod tests {
             let rom = vec![0xE8];
             cpu.x = u8::MAX;
 
-            cpu.step(&mut mem, &rom);
+            cpu.step(&rom, &mut mem);
 
             assert_eq!(
                 cpu,
@@ -652,7 +1053,7 @@ mod tests {
             cpu.x = 5;
             cpu.p = PZ_MASK;
 
-            cpu.step(&mut mem, &rom);
+            cpu.step(&rom, &mut mem);
 
             assert_eq!(
                 cpu,
@@ -672,7 +1073,7 @@ mod tests {
             let rom = vec![0xE8];
             cpu.x = 127;
 
-            cpu.step(&mut mem, &rom);
+            cpu.step(&rom, &mut mem);
 
             assert_eq!(
                 cpu,
@@ -693,7 +1094,7 @@ mod tests {
             cpu.x = u8::MAX;
             cpu.p = PN_MASK;
 
-            cpu.step(&mut mem, &rom);
+            cpu.step(&rom, &mut mem);
 
             assert_eq!(
                 cpu,
@@ -713,7 +1114,7 @@ mod tests {
             let rom = vec![0xC8];
             cpu.y = 40;
 
-            cpu.step(&mut mem, &rom);
+            cpu.step(&rom, &mut mem);
 
             assert_eq!(
                 cpu,
@@ -732,7 +1133,7 @@ mod tests {
             let rom = vec![0xC8];
             cpu.y = u8::MAX;
 
-            cpu.step(&mut mem, &rom);
+            cpu.step(&rom, &mut mem);
 
             assert_eq!(
                 cpu,
@@ -753,7 +1154,7 @@ mod tests {
             cpu.y = 5;
             cpu.p = PZ_MASK;
 
-            cpu.step(&mut mem, &rom);
+            cpu.step(&rom, &mut mem);
 
             assert_eq!(
                 cpu,
@@ -773,7 +1174,7 @@ mod tests {
             let rom = vec![0xC8];
             cpu.y = 127;
 
-            cpu.step(&mut mem, &rom);
+            cpu.step(&rom, &mut mem);
 
             assert_eq!(
                 cpu,
@@ -794,7 +1195,7 @@ mod tests {
             cpu.y = u8::MAX;
             cpu.p = PN_MASK;
 
-            cpu.step(&mut mem, &rom);
+            cpu.step(&rom, &mut mem);
 
             assert_eq!(
                 cpu,
@@ -813,17 +1214,58 @@ mod tests {
         use super::*;
 
         #[test]
-        fn jump_abs() {
+        fn jmp_abs() {
             let (mut cpu, mut mem) = setup();
             let rom = vec![0x4C, 0x0A, 0x80];
 
-            cpu.step(&mut mem, &rom);
+            cpu.step(&rom, &mut mem);
 
             assert_eq!(
                 cpu,
                 Cpu {
                     ir: 0x4C,
                     pc: 0x800A,
+                    ..Cpu::new()
+                }
+            );
+        }
+
+        #[test]
+        fn jmp_ai() {
+            let (mut cpu, mut mem) = setup();
+            let rom = vec![0x6C, 0x0A, 0x80];
+            mem[0x800A] = 0xCD;
+            mem[0x800B] = 0xAB;
+
+            cpu.step(&rom, &mut mem);
+
+            assert_eq!(
+                cpu,
+                Cpu {
+                    ir: 0x6C,
+                    pc: 0xABCD,
+                    ..Cpu::new()
+                }
+            );
+        }
+
+        #[test]
+        fn jmp_aii() {
+            let (mut cpu, mut mem) = setup();
+            let rom = vec![0x7C, 0x00, 0x80];
+
+            cpu.x = 6;
+            mem[0x8006] = 0xCD;
+            mem[0x8007] = 0xAB;
+
+            cpu.step(&rom, &mut mem);
+
+            assert_eq!(
+                cpu,
+                Cpu {
+                    ir: 0x7C,
+                    pc: 0xABCD,
+                    x: 6,
                     ..Cpu::new()
                 }
             );
@@ -838,7 +1280,7 @@ mod tests {
             let (mut cpu, mut mem) = setup();
             let rom = vec![0xA9, 0xED];
 
-            cpu.step(&mut mem, &rom);
+            cpu.step(&rom, &mut mem);
 
             assert_eq!(
                 cpu,
@@ -857,7 +1299,7 @@ mod tests {
         let (mut cpu, mut mem) = setup();
         let rom = vec![0xEA];
 
-        cpu.step(&mut mem, &rom);
+        cpu.step(&rom, &mut mem);
 
         assert_eq!(
             cpu,
@@ -878,7 +1320,7 @@ mod tests {
             let rom = vec![0x8D, 0x02, 0x60];
 
             cpu.a = 57;
-            cpu.step(&mut mem, &rom);
+            cpu.step(&rom, &mut mem);
 
             assert_eq!(
                 cpu,

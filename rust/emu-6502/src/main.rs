@@ -16,7 +16,7 @@ fn main() {
     let rom = Rom::load_binary("binary.out".to_string());
 
     loop {
-        cpu.step(&mut mem, &rom);
+        cpu.step(&rom, &mut mem);
         println!("{}", cpu);
         pause();
     }
