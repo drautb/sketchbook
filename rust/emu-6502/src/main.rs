@@ -1,14 +1,23 @@
 use emu_6502::cpu::Cpu;
 use emu_6502::rom::Rom;
 
-fn main() {
-    let _c = Cpu::new();
+use std::io::{stdin, stdout, Read, Write};
 
+fn pause() {
+    let mut stdout = stdout();
+    stdout.write(b"Press any key to continue...").unwrap();
+    stdout.flush().unwrap();
+    stdin().read(&mut [0]).unwrap();
+}
+
+fn main() {
+    let mut cpu = Cpu::new();
+    let mut mem = [0; 65_536];
     let rom = Rom::load_binary("binary.out".to_string());
 
-    println!(
-        "Welocme! First byte: {:#04X} Size: {}",
-        rom.data[0],
-        rom.data.len()
-    );
+    loop {
+        cpu.step(&mut mem, &rom);
+        println!("{}", cpu);
+        pause();
+    }
 }

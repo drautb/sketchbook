@@ -6,9 +6,9 @@
  * https://www.pagetable.com/c64ref/6502/?cpu=65c02s
  */
 use std::fmt;
+use std::num::Wrapping;
 use std::ops::Index;
 use std::ops::IndexMut;
-use std::num::Wrapping;
 
 #[derive(Debug)]
 enum AddressMode {
@@ -445,24 +445,24 @@ impl fmt::Display for Cpu {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "\n| -------------------------------------- |\n\
-        | PC | {:#04X} | {:4} | {:04b} {:04b} {:04b} {:04b} |\n\
-        | -------------------------------------- |\n\
-        | IR | {:#04X} | {:4} | {:04b} {:04b}           |\n\
-        |  A | {:#04X} | {:4} | {:04b} {:04b}           |\n\
-        |  X | {:#04X} | {:4} | {:04b} {:04b}           |\n\
-        |  Y | {:#04X} | {:4} | {:04b} {:04b}           |\n\
-        |  S | {:#04X} | {:4} | {:04b} {:04b}           |\n\
-        | -------------------------------------- |\n\
-        |  P | NV_BDIZC                          |\n\
-        |    | {:08b}                          |\n\
-        | -------------------------------------- |\n",
+            "\n| ----------------------------------------- |\n\
+        | PC | {:#06X} | {:5} | {:04b} {:04b} {:04b} {:04b} |\n\
+        | ----------------------------------------- |\n\
+        | IR |   {:#04X} | {:5} | {:04b} {:04b}           |\n\
+        |  A |   {:#04X} | {:5} | {:04b} {:04b}           |\n\
+        |  X |   {:#04X} | {:5} | {:04b} {:04b}           |\n\
+        |  Y |   {:#04X} | {:5} | {:04b} {:04b}           |\n\
+        |  S |   {:#04X} | {:5} | {:04b} {:04b}           |\n\
+        | ----------------------------------------- |\n\
+        |  P | NV_BDIZC                             |\n\
+        |    | {:08b}                             |\n\
+        | ----------------------------------------- |\n",
             self.pc,
             self.pc,
             self.pc >> 12,
-            self.pc >> 8,
-            self.pc >> 4,
-            self.pc,
+            self.pc >> 8 & 15,
+            self.pc >> 4 & 15,
+            self.pc & 15,
             self.ir,
             self.ir,
             self.ir >> 4,
@@ -532,6 +532,11 @@ impl Cpu {
                 self.pc += 1;
             }
 
+            Instruction::JMP(_, AddressMode::ABS) => {
+                let new_pc = self.get_pc_plus_2(rom);
+                self.pc = new_pc as usize;
+            }
+
             Instruction::LDA(_, AddressMode::IMMEDIATE) => {
                 self.a = rom[self.pc + 1];
                 self.pc += 2;
@@ -542,14 +547,15 @@ impl Cpu {
             }
 
             Instruction::STA(_, AddressMode::ABS) => {
-                let adl: i16 = rom[self.pc + 1].into();
-                let adh: i16 = rom[self.pc + 2].into();
-                let addr = (adh << 8) | adl;
+                let addr = self.get_pc_plus_2(rom);
                 mem[addr as usize] = self.a;
-                self.pc += 2;
+                self.pc += 3;
             }
 
-            _ => todo!(),
+            instruction => {
+                println!("Not implemented: {:?}", instruction);
+                todo!();
+            }
         }
     }
 
@@ -562,6 +568,14 @@ impl Cpu {
         }
     }
 
+    fn get_pc_plus_2<R>(&mut self, rom: &R) -> u16
+    where
+        R: Index<usize, Output = u8>,
+    {
+        let pcl: u16 = rom[self.pc + 1].into();
+        let pch: u16 = rom[self.pc + 2].into();
+        (pch << 8) | pcl
+    }
 }
 
 #[cfg(test)]
@@ -793,7 +807,27 @@ mod tests {
                 }
             )
         }
+    }
 
+    mod jmp_tests {
+        use super::*;
+
+        #[test]
+        fn jump_abs() {
+            let (mut cpu, mut mem) = setup();
+            let rom = vec![0x4C, 0x0A, 0x80];
+
+            cpu.step(&mut mem, &rom);
+
+            assert_eq!(
+                cpu,
+                Cpu {
+                    ir: 0x4C,
+                    pc: 0x800A,
+                    ..Cpu::new()
+                }
+            );
+        }
     }
 
     mod lda_tests {
@@ -835,24 +869,28 @@ mod tests {
         );
     }
 
-    #[test]
-    fn sta_a() {
-        let (mut cpu, mut mem) = setup();
-        let rom = vec![0x8D, 0x02, 0x60];
+    mod sta_tests {
+        use super::*;
 
-        cpu.a = 57;
-        cpu.step(&mut mem, &rom);
+        #[test]
+        fn sta_a() {
+            let (mut cpu, mut mem) = setup();
+            let rom = vec![0x8D, 0x02, 0x60];
 
-        assert_eq!(
-            cpu,
-            Cpu {
-                ir: 0x8D,
-                a: 57,
-                pc: 2,
-                ..Cpu::new()
-            }
-        );
+            cpu.a = 57;
+            cpu.step(&mut mem, &rom);
 
-        assert_eq!(mem[0x6002], 57);
+            assert_eq!(
+                cpu,
+                Cpu {
+                    ir: 0x8D,
+                    a: 57,
+                    pc: 3,
+                    ..Cpu::new()
+                }
+            );
+
+            assert_eq!(mem[0x6002], 57);
+        }
     }
 }
