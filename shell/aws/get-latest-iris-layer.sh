@@ -8,7 +8,7 @@ layer="$3"
 
 tmpfile="$(mktemp)"
 
-aws s3 cp --quiet "s3://ariadne-iris-$stage-$site/${site}_latest_snapshot_completion_notification.json" \
+aws s3 cp --quiet "s3://ariadne-iris-$stage-$site/${site}_reconciled_latest_snapshot_completed.json" \
   "$tmpfile" \
   --profile "$site"
 
