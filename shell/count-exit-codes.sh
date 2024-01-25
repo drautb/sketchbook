@@ -3,10 +3,10 @@
 command="$1"
 attempts="$2"
 
-echo "Executing \"$command\" $attempts times..."
+output="$(mktemp)"
+echo "Executing \"$command\" $attempts times, saving output to $output"
 
 declare -A outcomes
-output="$(mktemp)"
 
 for _ in $(seq 1 "$attempts"); do
   eval " $command" >> "$output" 2>&1
@@ -26,7 +26,3 @@ printf "\n\n*** COMPLETE ***\n"
 for code in "${!outcomes[@]}"; do
   echo "Exit $code: ${outcomes[$code]} times"
 done
-
-printf "\nOutput saved to %s\n" "$output"
-
-
