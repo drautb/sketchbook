@@ -5,18 +5,28 @@ attempts="$2"
 
 echo "Executing \"$command\" $attempts times..."
 
-successes=0
-failures=0
+declare -A outcomes
+output="$(mktemp)"
 
-for i in $(seq 1 $attempts); do 
-  echo "Attempt $i/$attempts..."
-  eval " $command"
-  if $command; then
-    successes=$((successes+1))
+for _ in $(seq 1 "$attempts"); do
+  eval " $command" >> "$output" 2>&1
+  status="$?"
+
+  if [ "$status" -eq 0 ]; then
+    printf "."
+  else
+    printf "!"
   fi
+
+  last_count="${outcomes["$status"]:-0}"
+  outcomes["$status"]="$((last_count+1))"
 done
 
-echo "*** COMPLETE ***"
-echo "  $successes/$attempts Succeeded"
+printf "\n\n*** COMPLETE ***\n"
+for code in "${!outcomes[@]}"; do
+  echo "Exit $code: ${outcomes[$code]} times"
+done
+
+printf "\nOutput saved to %s\n" "$output"
 
 
