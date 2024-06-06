@@ -20,7 +20,7 @@ print(f"Config contains {len(config.sections())} profiles...")
 config_changed = False
 for profile in config.sections():
     profile_name = profile.replace("profile ", "")
-    if (re.search("^[a-z]{4}\\d{1,3}$", profile_name) or re.search("^mon_(beta_|gamma_)?[a-z]{3}$", profile_name)) and "region" not in config[profile]:
+    if (re.search("^[a-z]{3}\\d{1,3}$", profile_name) or re.search("^mon_(beta_|gamma_)?[a-z]{3}$", profile_name)) and "region" not in config[profile]:
         nsm_query = profile_name.replace("mon_", "").replace("beta_", "").replace("gamma_", "")
         url = f"https://nsm-iad.amazon.com/_search_site_mapping?site={nsm_query}"
         # print(f"Getting region for {nsm_query}")
