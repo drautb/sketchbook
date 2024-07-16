@@ -1,41 +1,44 @@
-use std::{io, thread, time::Duration};
-use tui::{
+use std::io::{stdout, Result};
+
+use ratatui::{
     backend::CrosstermBackend,
-    widgets::{Widget, Block, Borders},
-    layout::{Layout, Constraint, Direction},
-    Terminal
-};
-use crossterm::{
-    event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
-    execute,
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+    crossterm::{
+        event::{self, KeyCode, KeyEventKind},
+        terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+        ExecutableCommand,
+    },
+    style::Stylize,
+    widgets::Paragraph,
+    Terminal,
 };
 
-fn main() -> Result<(), io::Error> {
+fn main() -> Result<()> {
+    stdout().execute(EnterAlternateScreen)?;
     enable_raw_mode()?;
-    let mut stdout = io::stdout();
-    execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
-    let backend = CrosstermBackend::new(stdout);
-    let mut terminal = Terminal::new(backend)?;
+    let mut terminal = Terminal::new(CrosstermBackend::new(stdout()))?;
+    terminal.clear()?;
 
-    terminal.draw(|f| {
-        let size = f.size();
-        let block = Block::default()
-            .title("Block")
-            .borders(Borders::ALL);
-        f.render_widget(block, size);
-    })?;
+    loop {
+        terminal.draw(|frame| {
+            let area = frame.size();
+            frame.render_widget(
+                Paragraph::new("Hello Ratatui! (press 'q' to quit)")
+                    .white()
+                    .on_blue(),
+                area,
+            );
+        })?;
 
-    thread::sleep(Duration::from_millis(5000));
+        if event::poll(std::time::Duration::from_millis(16))? {
+            if let event::Event::Key(key) = event::read()? {
+                if key.kind == KeyEventKind::Press && key.code == KeyCode::Char('q') {
+                    break;
+                }
+            }
+        }
+    }
 
+    stdout().execute(LeaveAlternateScreen)?;
     disable_raw_mode()?;
-
-    execute!(
-        terminal.backend_mut(),
-        LeaveAlternateScreen,
-        DisableMouseCapture
-    )?;
-    terminal.show_cursor()?;
-
     Ok(())
 }
