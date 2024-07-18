@@ -1,6 +1,7 @@
 pub mod card;
 
 use std::io;
+use std::mem;
 use rand::Rng;
 
 use card::{Card, Suit, Value};
@@ -31,6 +32,11 @@ Round State:
 * Player hands
 * Tricks won
 */
+
+/*
+less interested in remaking the whole game, more interested in running sims to see likelihood of victory, or stats about who may have what cards
+*/
+
 #[derive(Debug, PartialEq, Eq)]
 enum GameState {
     PickOrPass,
@@ -42,6 +48,7 @@ enum GameState {
 struct Game {
     dealer: u8,
     turn: u8,
+    trump: Suit,
     scores: Vec<u8>,
     players: Vec<Player>,
     leftovers: Vec<Card>,
@@ -53,6 +60,7 @@ impl Game {
         Game {
             dealer: 0,
             turn: 1,
+            trump: Suit::Clubs,
             scores: vec![0, 0],
             players: vec![
                 Player::new(),
@@ -89,6 +97,8 @@ impl Game {
 
         self.leftovers.clear();
         self.leftovers.extend_from_slice(&shuffled[20..24]);
+
+        self.turn = next_player(self.dealer);
     }
 
     fn generate_deck(&self) -> Vec<Card> {
@@ -123,12 +133,60 @@ impl Game {
         ];
     }
 
-    pub fn pick(&self) {
+    /**
+     * discard - the dealer's card to discard.
+     */
+    pub fn pick(&mut self, discard: Card) {
         if self.game_state != GameState::PickOrPass {
             panic!("pick called when game state was {:?}", self.game_state);
         }
 
+        let dealer = &mut self.players[self.dealer as usize];
+        for card in dealer.hand.iter_mut() {
+            if *card == discard {
+                self.trump = self.leftovers[0].1;
+                mem::swap(card, &mut self.leftovers[0]);
+                self.game_state = GameState::Play;
+                self.turn = next_player(self.dealer);
+                return
+            }
+        }
 
+        panic!("pick called with invalid discard {:?}, dealer's hand: {:?}", discard, dealer.hand);
+    }
+
+    pub fn pass(&mut self) {
+        if self.game_state != GameState::PickOrPass || self.game_state != GameState::ChooseOrPass {
+            panic!("pass called when game state was {:?}", self.game_state);
+        }
+
+        if self.turn == self.dealer {
+            if self.game_state == GameState::PickOrPass {
+                self.game_state = GameState::ChooseOrPass;
+            } else {
+                panic!("Dealer cannot pass!");
+            }
+        }
+
+        self.turn = next_player(self.turn);
+    }
+
+    pub fn choose(&mut self, trump: Suit) {
+        if self.game_state != GameState::ChooseOrPass {
+            panic!("choose called when game state was {:?}", self.game_state);
+        }
+
+        self.trump = trump;
+        self.turn = next_player(self.dealer);
+        self.game_state = GameState::Play;
+    }j
+}
+
+fn next_player(current_player: u8) -> u8 {
+    if current_player == 3 {
+        0
+    } else {
+        current_player + 1
     }
 }
 
