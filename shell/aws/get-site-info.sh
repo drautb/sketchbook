@@ -16,4 +16,7 @@ echo ""
 
 echo "Ariadne Constants:"
 mcurl -s "https://code.amazon.com/packages/AriadneConstants/blobs/mainline/--/constants/sites.json?raw=1" | jq --arg site "$SITE" '.sites[] | select(.siteId == $site)'
+echo ""
 
+echo "LCI Loopback IPs:"
+mcurl -s "https://code.amazon.com/packages/LCISiteMetadata/blobs/mainline/--/configuration/metadata/$SITE.metadata.yaml?raw=1" | yq -c '.racks[].servers | to_entries[] | {"Host":.key, "Loopback":.value.loopback_ip}'
