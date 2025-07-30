@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Tunnel Count Estimator</title>
+    <style>
+        .container {
+            width: 500px;
+            margin: 20px auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input[type="number"] {
+            width: 100%;
+            padding: 5px;
+        }
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        input[type="range"] {
+            flex-grow: 1;
+        }
+        .percentage-value {
+            min-width: 100px;
+        }
+        #result {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #f0f0f0;
+        }
+        .number-line-container {
+            margin-top: 20px;
+            padding: 20px 10px;
+            position: relative;
+        }
+        .number-line {
+            height: 10px;
+            width: 100%;
+            border-radius: 5px;
+            background: linear-gradient(
+                to right,
+                #00ff00 0%,
+                #ffff00 40%,
+                #ffff00 40%,
+                #ff0000 100%
+            );
+            position: relative;
+        }
+        .tick-marks {
+            position: relative;
+            width: 100%;
+            height: 20px;
+        }
+        .tick {
+            position: absolute;
+            width: 2px;
+            height: 10px;
+            background: #333;
+            top: 0;
+        }
+        .tick-label {
+            position: absolute;
+            transform: translateX(-50%);
+            top: 12px;
+            font-size: 12px;
+        }
+        .range-indicator {
+            position: absolute;
+            height: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            top: -5px;
+            border-radius: 3px;
+        }
+        .range-values {
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            top: -25px;
+            font-weight: bold;
+        }
+        .sublabel {
+            font-size: 0.8em;
+            color: #666;
+            margin-top: -3px;
+            margin-bottom: 5px;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 5px;
+        }
+
+        .region-button {
+            flex: 1;
+            padding: 5px 10px;
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        .region-button:hover {
+            background-color: #e0e0e0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Tunnel Count Estimator</h2>
+        <div class="input-group">
+            <label for="destCount">Destination Count:</label>
+            <div class="sublabel">Number of sites in the mesh. Preset values were current as of 2025-07-29.</div>
+            <input type="number" id="destCount" min="0" step="1" value="460">
+            <div class="button-group">
+                <button class="region-button" onclick="setDestCount(188)">NA</button>
+                <button class="region-button" onclick="setDestCount(102)">EU</button>
+                <button class="region-button" onclick="setDestCount(290)">NA + EU</button>
+                <button class="region-button" onclick="setDestCount(460)">Global</button>
+            </div>
+        </div>
+
+        
+        <div class="input-group">
+            <label for="ammPruneMin">Ariadne Mesh Management Prune Percent:</label>
+            <div class="sublabel">Percentage of tunnels pruned by AMM due to zero traffic. In NA, this is ~45% today. In EU, this is ~55%. </div>
+            <div class="slider-container">
+                <input type="range" id="ammPruneMin" min="0" max="100" step="1" value="30">
+                <input type="range" id="ammPruneMax" min="0" max="100" step="1" value="55">
+                <span id="ammPruneValue" class="percentage-value">0% - 0%</span>
+            </div>
+        </div>
+        
+        <div class="input-group">
+            <label for="dbsPercentMin">Demand-Based Split Percent:</label>
+            <div class="sublabel">Percentage of tunnels that are split due to high-demand. In NA sites today this is roughly ~20-25%.</div>
+            <div class="slider-container">
+                <input type="range" id="dbsPercentMin" min="0" max="100" step="1" value="20">
+                <input type="range" id="dbsPercentMax" min="0" max="100" step="1" value="25">
+                <span id="dbsPercentValue" class="percentage-value">0% - 0%</span>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label for="dbsFactorMin">Demand-Based Split Multiplier:</label>
+            <div class="sublabel">Multiplier for tunnels that are impacted by Demand-Based Splitting. (1 to 8) This varies from 2 to 8 today across NA+EU.</div>
+            <div class="slider-container">
+                <input type="range" id="dbsFactorMin" min="1" max="8" step="1" value="2">
+                <input type="range" id="dbsFactorMax" min="1" max="8" step="1" value="8">
+                <span id="dbsFactorValue" class="percentage-value">1 - 1</span>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label for="cosPercentMin">Classes of Service Percent:</label>
+            <div class="sublabel">Percentage of tunnels that are duplicated for different Classes of Service.</div>
+            <div class="slider-container">
+                <input type="range" id="cosPercentMin" min="0" max="100" step="1" value="10">
+                <input type="range" id="cosPercentMax" min="0" max="100" step="1" value="20">
+                <span id="cosPercentValue" class="percentage-value">0% - 0%</span>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label for="cosFactorMin">Classes of Service Multiplier:</label>
+            <div class="sublabel">Multiplier for tunnels that are impacted by Classes of Service.</div>
+            <div class="slider-container">
+                <input type="range" id="cosFactorMin" min="1" max="8" step="1" value="2">
+                <input type="range" id="cosFactorMax" min="1" max="8" step="1" value="4">
+                <span id="cosFactorValue" class="percentage-value">1 - 1</span>
+            </div>
+        </div>
+        
+        <div class="input-group">
+            <label for="mbbBufferMin">Make-Before-Break Buffer:</label>
+            <div class="sublabel">Percentage of tunnels that may be duplicated for Make-Before-Break.</div>
+            <div class="slider-container">
+                <input type="range" id="mbbBufferMin" min="0" max="100" step="1" value="20">
+                <input type="range" id="mbbBufferMax" min="0" max="100" step="1" value="40">
+                <span id="mbbBufferValue" class="percentage-value">0% - 0%</span>
+            </div>
+        </div>
+        <hr/>
+        <br/>
+        <div class="number-line-container">
+            <div class="range-values" id="range-values"></div>
+            <div class="number-line">
+                <div class="range-indicator" id="range-indicator"></div>
+            </div>
+            <div class="tick-marks" id="tick-marks"></div>
+        </div>
+    </div>
+
+    <script>
+        function setDestCount(value) {
+            document.getElementById('destCount').value = value;
+            calculate();
+        }
+
+        function updateSliderValues(minId, maxId, valueId, isPercentage = true) {
+            const minSlider = document.getElementById(minId);
+            const maxSlider = document.getElementById(maxId);
+            const valueSpan = document.getElementById(valueId);
+
+            function updateDisplay() {
+                let minVal = parseInt(minSlider.value);
+                let maxVal = parseInt(maxSlider.value);
+                if (minVal > maxVal) {
+                    [minVal, maxVal] = [maxVal, minVal];
+                    minSlider.value = minVal;
+                    maxSlider.value = maxVal;
+                }
+                valueSpan.textContent = isPercentage ? 
+                    `${minVal}% - ${maxVal}%` : 
+                    `${minVal} - ${maxVal}`;
+                calculate();
+            }
+
+            minSlider.oninput = maxSlider.oninput = updateDisplay;
+            updateDisplay();
+        }
+
+        function updateNumberLine(minVal, maxVal) {
+            const totalWidth = 5000;
+            const minPercent = (minVal / totalWidth) * 100;
+            const maxPercent = (maxVal / totalWidth) * 100;
+            
+            const indicator = document.getElementById('range-indicator');
+            indicator.style.left = minPercent + '%';
+            indicator.style.width = (maxPercent - minPercent) + '%';
+            
+            document.getElementById('range-values').textContent = 
+                `${Math.trunc(minVal)} - ${Math.trunc(maxVal)} Tunnels`;
+        }
+
+        function createTicks() {
+            const tickMarksContainer = document.getElementById('tick-marks');
+            const numTicks = 11; // 0 to 5000 by 500
+            
+            for (let i = 0; i < numTicks; i++) {
+                const tick = document.createElement('div');
+                tick.className = 'tick';
+                tick.style.left = (i * 10) + '%';
+                
+                const label = document.createElement('div');
+                label.className = 'tick-label';
+                label.textContent = (i * 500).toString();
+                label.style.left = (i * 10) + '%';
+                
+                tickMarksContainer.appendChild(tick);
+                tickMarksContainer.appendChild(label);
+            }
+        }
+
+        function calculateOneBound(destCount, ammPrune, 
+                                   dbsFactor, dbsPercent, 
+                                   cosFactor, cosPercent, 
+                                   mbbBuffer) {
+            const countAfterAmm = (1.0 - ammPrune) * destCount;
+            const dbsCount = Math.trunc(countAfterAmm * dbsPercent);
+            const cosCount = Math.trunc(countAfterAmm * cosPercent);
+            const countBeforeMbb = (countAfterAmm - dbsCount - cosCount) + (dbsCount * dbsFactor) + (cosCount * cosFactor);
+            return countBeforeMbb + Math.trunc(countBeforeMbb * mbbBuffer);
+        }
+
+        function calculate() {
+            const destCount = parseInt(document.getElementById('destCount').value);
+            const ammPruneMin = parseInt(document.getElementById('ammPruneMin').value) / 100;
+            const ammPruneMax = parseInt(document.getElementById('ammPruneMax').value) / 100;
+            const dbsFactorMin = parseInt(document.getElementById('dbsFactorMin').value);
+            const dbsFactorMax = parseInt(document.getElementById('dbsFactorMax').value);
+            const dbsPercentMin = parseInt(document.getElementById('dbsPercentMin').value) / 100;
+            const dbsPercentMax = parseInt(document.getElementById('dbsPercentMax').value) / 100;
+            const cosFactorMin = parseInt(document.getElementById('cosFactorMin').value);
+            const cosFactorMax = parseInt(document.getElementById('cosFactorMax').value);
+            const cosPercentMin = parseInt(document.getElementById('cosPercentMin').value) / 100;
+            const cosPercentMax = parseInt(document.getElementById('cosPercentMax').value) / 100;
+            const mbbBufferMin = parseInt(document.getElementById('mbbBufferMin').value) / 100;
+            const mbbBufferMax = parseInt(document.getElementById('mbbBufferMax').value) / 100;
+            
+            const resultMin = calculateOneBound(destCount, ammPruneMax, 
+                                                dbsFactorMin, dbsPercentMin,
+                                                cosFactorMin, cosPercentMin,
+                                                mbbBufferMin);
+            const resultMax = calculateOneBound(destCount, ammPruneMin, 
+                                                dbsFactorMax, dbsPercentMax,
+                                                cosFactorMax, cosPercentMax,
+                                                mbbBufferMax);
+            
+            updateNumberLine(resultMin, resultMax);
+        }
+
+        // Wrap initialization code in DOMContentLoaded event listener
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize the number line
+            createTicks();
+
+            // Initialize all slider pairs
+            updateSliderValues('ammPruneMin', 'ammPruneMax', 'ammPruneValue');
+            updateSliderValues('dbsFactorMin', 'dbsFactorMax', 'dbsFactorValue', false); // false for non-percentage
+            updateSliderValues('dbsPercentMin', 'dbsPercentMax', 'dbsPercentValue');
+            updateSliderValues('cosFactorMin', 'cosFactorMax', 'cosFactorValue', false); // false for non-percentage
+            updateSliderValues('cosPercentMin', 'cosPercentMax', 'cosPercentValue');
+            updateSliderValues('mbbBufferMin', 'mbbBufferMax', 'mbbBufferValue');
+
+            // Add event listener for destination count
+            document.getElementById('destCount').addEventListener('input', calculate);
+
+            // Initial calculation
+            calculate();
+        });
+    </script>
+</body>
+</html>
