@@ -260,6 +260,55 @@
             }
         }
 
+        function getQueryParams() {
+            const params = new URLSearchParams(window.location.search);
+            return {
+                destCount: parseInt(params.get('destCount')) || 460,
+                ammPruneMin: parseInt(params.get('ammPruneMin')) || 0,
+                ammPruneMax: parseInt(params.get('ammPruneMax')) || 0,
+                dbsFactorMin: parseInt(params.get('dbsFactorMin')) || 1,
+                dbsFactorMax: parseInt(params.get('dbsFactorMax')) || 1,
+                dbsPercentMin: parseInt(params.get('dbsPercentMin')) || 0,
+                dbsPercentMax: parseInt(params.get('dbsPercentMax')) || 0,
+                cosFactorMin: parseInt(params.get('cosFactorMin')) || 1,
+                cosFactorMax: parseInt(params.get('cosFactorMax')) || 1,
+                cosPercentMin: parseInt(params.get('cosPercentMin')) || 0,
+                cosPercentMax: parseInt(params.get('cosPercentMax')) || 0,
+                mbbBufferMin: parseInt(params.get('mbbBufferMin')) || 0,
+                mbbBufferMax: parseInt(params.get('mbbBufferMax')) || 0
+            };
+        }
+
+        function updateQueryParams() {
+            const params = new URLSearchParams();
+            
+            // Get all current values
+            const values = {
+                destCount: document.getElementById('destCount').value,
+                ammPruneMin: document.getElementById('ammPruneMin').value,
+                ammPruneMax: document.getElementById('ammPruneMax').value,
+                dbsFactorMin: document.getElementById('dbsFactorMin').value,
+                dbsFactorMax: document.getElementById('dbsFactorMax').value,
+                dbsPercentMin: document.getElementById('dbsPercentMin').value,
+                dbsPercentMax: document.getElementById('dbsPercentMax').value,
+                cosFactorMin: document.getElementById('cosFactorMin').value,
+                cosFactorMax: document.getElementById('cosFactorMax').value,
+                cosPercentMin: document.getElementById('cosPercentMin').value,
+                cosPercentMax: document.getElementById('cosPercentMax').value,
+                mbbBufferMin: document.getElementById('mbbBufferMin').value,
+                mbbBufferMax: document.getElementById('mbbBufferMax').value
+            };
+
+            // Add all values to query params
+            Object.entries(values).forEach(([key, value]) => {
+                params.set(key, value);
+            });
+
+            // Update URL without reloading the page
+            const newUrl = `${window.location.pathname}?${params.toString()}`;
+            window.history.pushState({}, '', newUrl);
+        }
+
         function calculateOneBound(destCount, ammPrune, 
                                    dbsFactor, dbsPercent, 
                                    cosFactor, cosPercent, 
@@ -296,10 +345,28 @@
                                                 mbbBufferMax);
             
             updateNumberLine(resultMin, resultMax);
+            updateQueryParams();
         }
 
         // Wrap initialization code in DOMContentLoaded event listener
         document.addEventListener('DOMContentLoaded', function() {
+            const params = getQueryParams();
+
+            // Set initial values from URL params
+            document.getElementById('destCount').value = params.destCount;
+            document.getElementById('ammPruneMin').value = params.ammPruneMin;
+            document.getElementById('ammPruneMax').value = params.ammPruneMax;
+            document.getElementById('dbsFactorMin').value = params.dbsFactorMin;
+            document.getElementById('dbsFactorMax').value = params.dbsFactorMax;
+            document.getElementById('dbsPercentMin').value = params.dbsPercentMin;
+            document.getElementById('dbsPercentMax').value = params.dbsPercentMax;
+            document.getElementById('cosFactorMin').value = params.cosFactorMin;
+            document.getElementById('cosFactorMax').value = params.cosFactorMax;
+            document.getElementById('cosPercentMin').value = params.cosPercentMin;
+            document.getElementById('cosPercentMax').value = params.cosPercentMax;
+            document.getElementById('mbbBufferMin').value = params.mbbBufferMin;
+            document.getElementById('mbbBufferMax').value = params.mbbBufferMax;
+
             // Initialize the number line
             createTicks();
 
